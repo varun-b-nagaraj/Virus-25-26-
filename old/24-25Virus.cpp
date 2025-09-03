@@ -3,7 +3,7 @@
 #include "pros/misc.h"
 #include "pros/motors.h"
 #include "pros/motors.hpp"
-// #include "pros/adi.hpp"
+#include "pros/adi.hpp"
 #include "pros/imu.hpp"
 #include "pros/rotation.hpp"
 #include "pros/rtos.hpp"
@@ -13,39 +13,35 @@
 // controller
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
-// ====================
-// DRIVETRAIN HARDWARE
-// ====================
+// motor groups
 pros::MotorGroup leftMotors({-1, -2},
                             pros::MotorGearset::blue); // left motor group - ports 1 and 2 (reversed)
 pros::MotorGroup rightMotors({3, 4},
                              pros::MotorGearset::blue); // right motor group - ports 3 and 4 (unreversed)
 
-// ================
-// INTAKE (NEW)
-// ================
-pros::Motor intake1(19, pros::MotorGears::blue);
-pros::Motor intake2(-20, pros::MotorGears::green);
+// pneumatics
+pros::adi::Pneumatics MogoMech('h', true); // Pneumatics on port H
 
-// =====================
-// UNUSED SUBSYSTEMS (commented out but kept for reference)
-// =====================
-// pros::adi::Pneumatics MogoMech('h', true); // Pneumatics on port H
-// pros::Motor highStake(7, pros::MotorGears::red);
-// pros::Motor leftArm(20, pros::MotorGears::green);
+// Define Intake Motors
+pros::Motor intake1(5, pros::MotorGears::blue);
+pros::Motor intake2(6, pros::MotorGears::green);
 
-// ================
-// SENSORS (used for odom/drivetrain)
-// ================
-pros::Imu imu(18);                    // IMU
-pros::Rotation verticalEnc(-8);  // Rotation sensor on port 8, reversed
+// Define HighStake Motor
+pros::Motor highStake(7, pros::MotorGears::red);
 
-// Tracking wheel object (Vertical). 2" wheel, 0" offset (update if measured differently).
+// Arm
+pros::Motor leftArm(20, pros::MotorGears::green);
+
+// Inertial Sensor on port 18
+pros::Imu imu(18);
+
+// Tracking wheel encoder (Vertical). Rotation sensor on port 8, reversed.
+pros::Rotation verticalEnc(-8);
+
+// Tracking wheel object (Vertical). 2" wheel, 0" offset (update if you measure differently).
 lemlib::TrackingWheel vertical(&verticalEnc, lemlib::Omniwheel::NEW_2, 0);
 
-// ====================
-// DRIVETRAIN SETTINGS
-// ====================
+// drivetrain settings
 lemlib::Drivetrain drivetrain(&leftMotors,                 // left motor group
                               &rightMotors,                // right motor group
                               15,                          // track width (inches)
@@ -109,17 +105,18 @@ void initialize() {
     chassis.calibrate();     // calibrate sensors
     chassis.setPose({0, 0, 0}); // set the robot's pose to 0, 0, 0
 
-    // --- Unused subsystems commented out ---
-    // highStake.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-    // leftArm.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+    leftArm.set_zero_position(0); // set the zero position for the left arm
+    highStake.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD); // hold for highStake motor
+    leftArm.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);   // hold for leftArm
 
     // thread for brain screen and position logging
     pros::Task screenTask([&]() {
         while (true) {
             // print robot location to the brain screen
-            pros::lcd::print(0, "X: %f", chassis.getPose().x);         // x
-            pros::lcd::print(1, "Y: %f", chassis.getPose().y);         // y
+            pros::lcd::print(0, "X: %f", chassis.getPose().x);       // x
+            pros::lcd::print(1, "Y: %f", chassis.getPose().y);       // y
             pros::lcd::print(2, "Theta: %f", chassis.getPose().theta); // heading
+            pros::lcd::print(3, "HighStake Rot: %f", highStake.get_position()); // highStake rotation
             // log position telemetry
             lemlib::telemetrySink()->info("Chassis pose: {}", chassis.getPose());
             // delay to save resources
@@ -135,36 +132,56 @@ void disabled() {}
 
 void competition_initialize() {}
 
-// === Driver input shaping for drivetrain (keep) ===
-int scaleInput(int input) {
-    double scaled = std::pow(std::abs(input) / 127.0, 2) * 127.0;
-    return input < 0 ? static_cast<int>(-scaled) : static_cast<int>(scaled);
+// === Helpers ===
+void spinIntakeMS(int duration) {
+    intake1.move_velocity(600);
+    intake2.move_velocity(174);
+    pros::delay(duration); // Wait for the specified duration
+    intake1.move_velocity(0);
+    intake2.move_velocity(0);
+}
+void spinIntake() {
+    intake1.move_velocity(600);
+    intake2.move_velocity(174);
+}
+void stopIntake() {
+    intake1.move_velocity(0);
+    intake2.move_velocity(0);
 }
 
 // === Autonomous ===
 void autonomous() {
     chassis.setPose(0, 0, 0);
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
-
-    // (No other actions; subsystems are commented out)
+    highStake.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+    leftArm.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 }
 
 // === Driver control ===
+int scaleInput(int input) {
+    double scaled = std::pow(std::abs(input) / 127.0, 2) * 127.0;
+    return input < 0 ? static_cast<int>(-scaled) : static_cast<int>(scaled);
+}
+
 void opcontrol() {
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST);
+    highStake.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+    leftArm.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 
+    // loop to continuously update motors
     while (true) {
-        // joystick
+        // get joystick positions
         int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
         int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
 
-        // slowdown combo (kept): L2 + R2
+        // Check for slowdown
         bool slowdown = controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2) &&
                         controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2);
 
-        // shape drive input
+        // Apply input shaping
         leftY = scaleInput(leftY);
 
+        // slowdown scaling
         if (slowdown) {
             leftY = static_cast<int>(leftY * 0.5);
             rightX = static_cast<int>(rightX * 0.5);
@@ -173,18 +190,47 @@ void opcontrol() {
         // drive
         chassis.arcade(leftY, rightX);
 
-        // === Intake control (R1 forward, R2 reverse) ===
-        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) {
-            intake1.move_velocity(600);
-            intake2.move_velocity(174);
-        } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
-            intake1.move_velocity(-200);
-            intake2.move_velocity(-80);
-        } else {
+        // intake control
+        if (slowdown) {
             intake1.move_velocity(0);
             intake2.move_velocity(0);
+        } else {
+            if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
+                intake1.move_velocity(600);
+                intake2.move_velocity(174);
+            } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
+                intake1.move_velocity(-200);
+                intake2.move_velocity(-80);
+            } else {
+                intake1.move_velocity(0);
+                intake2.move_velocity(0);
+            }
         }
 
+        // high stake control
+        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_UP)) {
+            highStake.move_velocity(40);
+        } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN)) {
+            highStake.move_velocity(-100);
+        } else {
+            highStake.move_velocity(0);
+        }
+
+        // arm control
+        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_A)) {
+            leftArm.move_absolute(220, 100); // bring arm down
+        } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y)) {
+            leftArm.move_absolute(0, 100);
+        }
+
+        // mogo mech control
+        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) {
+            MogoMech.extend();
+        } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
+            MogoMech.retract();
+        }
+
+        // delay to save resources
         pros::delay(10);
     }
 }
