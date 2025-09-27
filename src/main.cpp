@@ -16,16 +16,16 @@ pros::Controller controller(pros::E_CONTROLLER_MASTER);
 // ====================
 // DRIVETRAIN HARDWARE
 // ====================
-pros::MotorGroup leftMotors({-1, -2},
+pros::MotorGroup leftMotors({-15, -12},
                             pros::MotorGearset::blue); // left motor group - ports 1 and 2 (reversed)
-pros::MotorGroup rightMotors({3, 4},
+pros::MotorGroup rightMotors({13, 14},
                              pros::MotorGearset::blue); // right motor group - ports 3 and 4 (unreversed)
 
 // ================
 // INTAKE (NEW)
 // ================
-pros::Motor intake1(19, pros::MotorGears::blue);
-pros::Motor intake2(-20, pros::MotorGears::green);
+pros::Motor intake1(1, pros::MotorGears::blue);
+pros::Motor intake2(-2, pros::MotorGears::green);
 
 // =====================
 // UNUSED SUBSYSTEMS (commented out but kept for reference)
@@ -141,11 +141,12 @@ int scaleInput(int input) {
     return input < 0 ? static_cast<int>(-scaled) : static_cast<int>(scaled);
 }
 
+
 // === Autonomous ===
 void autonomous() {
     chassis.setPose(0, 0, 0);
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
-
+    chassis.turnToHeading(-90, 5000);
     // (No other actions; subsystems are commented out)
 }
 
@@ -164,6 +165,7 @@ void opcontrol() {
 
         // shape drive input
         leftY = scaleInput(leftY);
+        rightX = scaleInput(rightX);
 
         if (slowdown) {
             leftY = static_cast<int>(leftY * 0.5);
