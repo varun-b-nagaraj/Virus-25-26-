@@ -18,7 +18,7 @@ pros::Controller controller(pros::E_CONTROLLER_MASTER);
 // ====================
 pros::MotorGroup leftMotors({-15, -12},
                             pros::MotorGearset::blue); // left motor group - ports 1 and 2 (reversed)
-pros::MotorGroup rightMotors({13, 14},
+pros::MotorGroup rightMotors({18, 14},
                              pros::MotorGearset::blue); // right motor group - ports 3 and 4 (unreversed)
 
 // ================
@@ -26,7 +26,7 @@ pros::MotorGroup rightMotors({13, 14},
 // ================
 pros::Motor intake1(1, pros::MotorGears::blue);
 pros::Motor intake2(-2, pros::MotorGears::green);
-
+pros::Motor choice(10, pros::MotorGears::green);
 // =====================
 // UNUSED SUBSYSTEMS (commented out but kept for reference)
 // =====================
@@ -37,11 +37,12 @@ pros::Motor intake2(-2, pros::MotorGears::green);
 // ================
 // SENSORS (used for odom/drivetrain)
 // ================
-pros::Imu imu(18);                    // IMU
-pros::Rotation verticalEnc(-8);  // Rotation sensor on port 8, reversed
-
+pros::Imu imu(16);                    // IMU
+pros::Rotation verticalEnc(-17);  // Rotation sensor on port 8, reversed
+pros::Rotation horizontalEnc(3);  // Rotation sensor on port 9, reversed
 // Tracking wheel object (Vertical). 2" wheel, 0" offset (update if measured differently).
 lemlib::TrackingWheel vertical(&verticalEnc, lemlib::Omniwheel::NEW_2, 0);
+lemlib::TrackingWheel horizontal(&horizontalEnc, lemlib::Omniwheel::NEW_2, 0);
 
 // ====================
 // DRIVETRAIN SETTINGS
@@ -78,7 +79,7 @@ lemlib::ControllerSettings angularController(10,  // kP
 // sensors for odometry
 lemlib::OdomSensors sensors(&vertical,  // vertical tracking wheel
                             nullptr,    // vertical tracking wheel 2
-                            nullptr,    // horizontal tracking wheel
+                            &horizontal,    // horizontal tracking wheel
                             nullptr,    // horizontal tracking wheel 2
                             &imu);      // inertial sensor
 
@@ -109,6 +110,7 @@ void initialize() {
     chassis.calibrate();     // calibrate sensors
     chassis.setPose({0, 0, 0}); // set the robot's pose to 0, 0, 0
 
+    chassis.turnToHeading(90, 100000); // turn to heading to calibrate IMU
     // --- Unused subsystems commented out ---
     // highStake.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
     // leftArm.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
@@ -136,11 +138,12 @@ void disabled() {}
 void competition_initialize() {}
 
 // === Driver input shaping for drivetrain (keep) ===
+/*
 int scaleInput(int input) {
     double scaled = std::pow(std::abs(input) / 127.0, 2) * 127.0;
     return input < 0 ? static_cast<int>(-scaled) : static_cast<int>(scaled);
 }
-
+*/
 
 // === Autonomous ===
 void autonomous() {
@@ -159,13 +162,13 @@ void opcontrol() {
         int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
         int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
 
-        // slowdown combo (kept): L2 + R2
+        // slowdown combo (kept): L2 + L1
         bool slowdown = controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2) &&
-                        controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2);
+                        controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1);
 
         // shape drive input
-        leftY = scaleInput(leftY);
-        rightX = scaleInput(rightX);
+    //    leftY = scaleInput(leftY);
+    //    rightX = scaleInput(rightX);
 
         if (slowdown) {
             leftY = static_cast<int>(leftY * 0.5);
@@ -174,7 +177,15 @@ void opcontrol() {
 
         // drive
         chassis.arcade(leftY, rightX);
+        // Up down deciding
 
+        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_UP)) {
+            choice.move_velocity(200);
+        } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN)) {
+            choice.move_velocity(-200);
+        } else {
+            choice.move_velocity(0);
+        }
         // === Intake control (R1 forward, R2 reverse) ===
         if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) {
             intake1.move_velocity(600);
