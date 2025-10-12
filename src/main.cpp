@@ -51,30 +51,30 @@ lemlib::Drivetrain drivetrain(&leftMotors,                 // left motor group
                               &rightMotors,                // right motor group
                               15,                          // track width (inches)
                               lemlib::Omniwheel::NEW_325,  // using 3.25" omnis
-                              450,                         // drivetrain rpm
+                              360,                          // drivetrain rpm
                               8);                          // horizontal drift (unitless tuning)
 
 // lateral motion controller
-lemlib::ControllerSettings linearController(14,  // kP
+lemlib::ControllerSettings linearController(2,  // kP
                                             0,   // kI
-                                            108, // kD
-                                            3,   // anti windup
-                                            1,   // small error (deg)
-                                            100, // small error timeout (ms)
-                                            3,   // large error (deg)
-                                            500, // large error timeout (ms)
+                                            10, // kD
+                                            0,   // anti windup
+                                            0,   // small error (deg)
+                                            0, // small error timeout (ms)
+                                            0,   // large error (deg)
+                                            0, // large error timeout (ms)
                                             0);  // max accel (slew)
 
 // angular motion controller
-lemlib::ControllerSettings angularController(10,  // kP
-                                             0,   // kI
-                                             108, // kD
-                                             3,   // anti windup
-                                             1,   // small error (deg)
-                                             100, // small error timeout (ms)
-                                             3,   // large error (deg)
-                                             500, // large error timeout (ms)
-                                             0);  // max accel (slew)
+lemlib::ControllerSettings angularController(8,  // kP
+                                            0,   // kI
+                                            32.5, // kD
+                                            0,   // anti windup
+                                            0,   // small error (deg)
+                                            0, // small error timeout (ms)
+                                            0,   // large error (deg)
+                                            0, // large error timeout (ms)
+                                            0);  // max accel (slew)
 
 // sensors for odometry
 lemlib::OdomSensors sensors(&vertical,  // vertical tracking wheel
@@ -138,18 +138,17 @@ void disabled() {}
 void competition_initialize() {}
 
 // === Driver input shaping for drivetrain (keep) ===
-/*
 int scaleInput(int input) {
     double scaled = std::pow(std::abs(input) / 127.0, 2) * 127.0;
     return input < 0 ? static_cast<int>(-scaled) : static_cast<int>(scaled);
 }
-*/
+
 
 // === Autonomous ===
 void autonomous() {
     chassis.setPose(0, 0, 0);
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
-    chassis.turnToHeading(-90, 5000);
+    chassis.turnToHeading(90, 5000);
     // (No other actions; subsystems are commented out)
 }
 
@@ -167,8 +166,8 @@ void opcontrol() {
                         controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1);
 
         // shape drive input
-    //    leftY = scaleInput(leftY);
-    //    rightX = scaleInput(rightX);
+        leftY = scaleInput(leftY);
+        rightX = scaleInput(rightX);
 
         if (slowdown) {
             leftY = static_cast<int>(leftY * 0.5);
