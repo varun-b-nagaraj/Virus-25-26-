@@ -99,6 +99,7 @@ lemlib::Chassis chassis(drivetrain,        // drivetrain settings
                         angularController, // angular PID settings
                         sensors);          // odometry sensors
 
+pros::adi::Pneumatics MogoMech('e', false); // Pneumatics on port E
 /**
  * Runs initialization code. This occurs as soon as the program is started.
  *
@@ -191,7 +192,7 @@ void autonomous() {
     // DO NOTTTTT DELETE ANY CODE I ALREADY PUT HERE.
     chassis.setPose(0, 0, 0);
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
-    /*
+    
     // Use this to turn(positive is to the right and negative is to the left) and the timeout is in milliseconds
     // and specifies how long the robot has to complete the action
     chassis.turnToHeading(90, 5000);
@@ -227,7 +228,14 @@ void autonomous() {
     // Chaining too much motion or moveToPose commands might create innacuracies, between commands a small timeout allows 
     // the robot to settle and alleviates any innacuracies
     pros::delay(1000); // wait for 1 second
-    */
+
+    // Pneumatics usage example. First code extends the pnuematic the second one shrinks it back.
+    // Limit usuage as much as possible since air tank depletes and we can't shove it in like we do for driver controller
+    // So low air pressure is worse in autonomous.
+    MogoMech.extend();
+    MogoMech.retract();
+    
+    //  Test routine below
     // === 1. DRIVE TEST ===
     pros::lcd::print(5, "Step 1: Driving forward & backward...");
     chassis.moveToPose(0, 24, 0, 3000);  // forward 24 inches
@@ -313,6 +321,12 @@ void opcontrol() {
         } else {
             intake1.move_velocity(0);
             intake2.move_velocity(0);
+        }
+
+        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_UP)) {
+            MogoMech.extend();
+        } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN)) {
+            MogoMech.retract();
         }
 
         pros::delay(10);
