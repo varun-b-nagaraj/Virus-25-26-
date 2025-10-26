@@ -145,21 +145,27 @@ int scaleInput(int input) {
     double scaled = std::pow(std::abs(input) / 127.0, 2) * 127.0;
     return input < 0 ? static_cast<int>(-scaled) : static_cast<int>(scaled);
 }
-
-void spinIntake(int duration = 0, bool forward = true) {
-    if (forward) {
-        intake1.move_velocity(600);
-        intake2.move_velocity(174);
-    } else {
-        intake1.move_velocity(-200);
-        intake2.move_velocity(-80);
-    }
-
-    if (duration > 0) {
-        pros::delay(duration);
-        intake1.move_velocity(0);
-        intake2.move_velocity(0);
-    }
+void spinIntakeMS(int duration) {
+    intake1.move_velocity(600);
+    intake2.move_velocity(174);
+    pros::delay(duration); // Wait for the specified duration
+    intake1.move_velocity(0);
+    intake2.move_velocity(0);
+}
+void rejectIntakeMS(int duration) {
+    intake1.move_velocity(-200);
+    intake2.move_velocity(-80);
+    pros::delay(duration); // Wait for the specified duration
+    intake1.move_velocity(0);
+    intake2.move_velocity(0);
+}
+void rejectIntake() {
+    intake1.move_velocity(-200);
+    intake2.move_velocity(-80);
+}
+void spinIntake() {
+    intake1.move_velocity(600);
+    intake2.move_velocity(174);
 }
 void stopIntake() {
     intake1.move_velocity(0);
@@ -173,10 +179,10 @@ void spinChoice(const std::string& direction, int duration = 0) {
         speed = 200;
     } else if (direction == "down") {
         speed = -200;
-    } else {
+    } else if( direction == "stop") {
         choice.move_velocity(0);
-        return; // invalid direction
-    }
+    } else {
+        return;}
 
     choice.move_velocity(speed);
 
@@ -205,9 +211,8 @@ void autonomous() {
     intake1.move_velocity(600); // Spin intake 1 forward
     intake2.move_velocity(174); // Spin intake 2 forward (slower motor or different gear ratio)
     // You can also use the spinIntake() function I made above to do the same thing
-    spinIntake();
-    spinIntake(2000); // Spin intake for 2 seconds
-    spinIntake(2000, false); // Spin intake in reverse for 2 seconds
+    spinIntake(); // Defaults to spinning forward indefinitely
+    spinIntakeMS(2000); // Spin intake for 2 seconds
 
     //When you want to stop just set the velocity to 0
     intake1.move_velocity(0);
@@ -252,9 +257,9 @@ void autonomous() {
 
     // === 3. INTAKE TEST ===
     pros::lcd::print(5, "Step 3: Testing intake...");
-    spinIntake(1500, true);              // forward full speed for 1.5s
+    spinIntakeMS(1500);              // forward full speed for 1.5s
     pros::delay(500);
-    spinIntake(1500, false);             // reverse slower for 1.5s
+    spinIntakeMS(-1500);             // reverse slower for 1.5s
     pros::delay(1000);
 
     // === 4. CHOICE MOTOR TEST ===
