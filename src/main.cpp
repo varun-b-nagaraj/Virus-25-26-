@@ -31,7 +31,7 @@ pros::MotorGroup rightMotors({9, 10},
 // ================
 pros::Motor intake1(-20, pros::MotorGears::blue);
 pros::Motor intake2(15, pros::MotorGears::blue);
-pros::Motor intake3(8, pros::MotorGears::blue);
+pros::Motor intake3(8, pros::MotorGears::green);
 
 pros::Motor choice(6, pros::MotorGears::blue);
 
@@ -181,7 +181,7 @@ int scaleInput(int input) {
 void spinIntakeMS(int duration) {
     intake1.move_velocity(600);
     intake2.move_velocity(600);
-    intake3.move_velocity(600);
+    intake3.move_velocity(200);
     pros::delay(duration);
     intake1.move_velocity(0);
     intake2.move_velocity(0);
@@ -192,7 +192,7 @@ void spinIntakeMS(int duration) {
 void spinIntake() {
     intake1.move_velocity(600);
     intake2.move_velocity(600);
-    intake3.move_velocity(600);
+    intake3.move_velocity(200);
 }
 
 // Stop all intake motors
@@ -206,7 +206,7 @@ void stopIntake() {
 void rejectIntakeMS(int duration) {
     intake1.move_velocity(-600);
     intake2.move_velocity(-600);
-    intake3.move_velocity(-600);
+    intake3.move_velocity(-200);
     pros::delay(duration);
     intake1.move_velocity(0);
     intake2.move_velocity(0);
@@ -217,9 +217,30 @@ void rejectIntakeMS(int duration) {
 void rejectIntake() {
     intake1.move_velocity(-600);
     intake2.move_velocity(-600);
-    intake3.move_velocity(-600);
+    intake3.move_velocity(-200);
 }
 
+double inchesToCm(double inches) {
+    return inches * 2.54;
+}
+
+// Set only the X coordinate (keep Y and heading)
+void setPoseX(double newX) {
+    auto pose = chassis.getPose();       // get current pose
+    chassis.setPose(newX, pose.y, pose.theta);
+}
+
+// Set only the Y coordinate (keep X and heading)
+void setPoseY(double newY) {
+    auto pose = chassis.getPose();
+    chassis.setPose(pose.x, newY, pose.theta);
+}
+
+// Set only the heading (keep X and Y)
+void setPoseTheta(double newTheta) {
+    auto pose = chassis.getPose();
+    chassis.setPose(pose.x, pose.y, newTheta);
+}
 
 
 
@@ -432,7 +453,7 @@ void opcontrol() {
         // Handle flip timing (delay + eject window)
         if (flippingBlue) {
             const int FLIP_DELAY_MS    = 50;   // wait a bit after seeing blue
-            const int FLIP_DURATION_MS = 500;  // how long to eject
+            const int FLIP_DURATION_MS = 5000;  // how long to eject
 
             uint32_t dt = now - flipStartTime;
 
@@ -470,7 +491,7 @@ void opcontrol() {
 
         intake1.move_velocity(intakeCmd);
         intake2.move_velocity(intakeCmd);
-        intake3.move_velocity(intakeCmd);
+        intake3.move_velocity(intakeCmd/3);
 
         // ============================
         // PNEUMATICS
