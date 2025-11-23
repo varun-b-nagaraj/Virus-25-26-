@@ -90,7 +90,7 @@ lemlib::ControllerSettings angularController(3.36, // proportional gain (kP)
                                               .5, // small error range, in inches
                                               700, // small error range timeout, in milliseconds
                                               4, // large error range, in inches
-                                              2000, // large error range timeout, in milliseconds
+                                              1000, // large error range timeout, in milliseconds
                                               0 // maximum acceleration (slew)
 );
 
@@ -312,12 +312,18 @@ void autonomous() {
     chassis.turnToHeading(90,1000);
     pros::delay(500);
     chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
-    spinIntake();
+    //spinIntake();
     chassis.moveToPose(36,chassis.getPose().y,chassis.getPose().theta,1500);
     chassis.moveToPose(50,chassis.getPose().y,chassis.getPose().theta,2500, {.maxSpeed = 40});
-    
-    //pros::delay(500);
-    //chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
+    pros::delay(500);
+    chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
+    /*
+    chassis.turnToHeading(310,1500);
+    */
+
+    //chassis.turnToHeading(-45,2500);
+    //chassis.moveToPose(24,56,chassis.getPose().theta,2500);
+    //chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
     /*
     pros::delay(1000); // wait for 1 second before starting autonomous
     spinIntake();
