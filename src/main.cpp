@@ -123,6 +123,9 @@ lemlib::Chassis chassis(drivetrain,        // drivetrain settings
 
 
 pros::adi::Pneumatics MogoMech('e', false); // Pneumatics on port E
+pros::adi::Pneumatics Descorer('e', false); // Pneumatics on port E
+pros::adi::Pneumatics Grabber('e', false); // Pneumatics on port E
+
 /**
 * Runs initialization code. This occurs as soon as the program is started.
 *
@@ -314,11 +317,36 @@ void autonomous() {
     chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
     //spinIntake();
     chassis.moveToPose(36,chassis.getPose().y,chassis.getPose().theta,1500);
-    chassis.moveToPose(50,chassis.getPose().y,chassis.getPose().theta,2500, {.maxSpeed = 40});
+    chassis.moveToPose(50,chassis.getPose().y,chassis.getPose().theta,2500, {.maxSpeed = 40}); // Use early exit params later.
     pros::delay(500);
     chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
     /*
-    chassis.turnToHeading(310,1500);
+    chassis.turnToHeading(313,1500);
+    chassis.moveToPose(24,48,chassis.getPose().theta,2500); 
+    orrrrrr 
+    { Goes by the line
+    chassis.turnToHeading(270,1500);
+    chassis.moveToPose(24,24,chassis.getPose().theta,2500);
+    chassis.setPose(getFront(),72-getRight(),chassis.getPose().theta);
+    chassis.turnToHeading(0,1500);
+    chassis.moveToPose(24,48,chassis.getPose().theta,2500);
+    }
+    chassis.turnToHeading(270,1500);
+    chassis.setPose(getFront()+(lenght of tall goal thing),72-getRight(),chassis.getPose().theta);
+    grabber.extend();
+    chassis.moveToPose(14,chassis.getPose().y,chassis.getPose().theta,2500,{.maxSpeed = 50});
+    spinIntakeMS(2000); //spins intake for 2 seconds to make sure ball is in
+    spinIntake(); // keeps intake spinning to hold ball in
+    chassis.moveToPose(24,48,chassis.getPose().theta,2500,{.forwards = false}); 
+    grabber.retract();
+    chassis.setPose(getFront()+(lenght of tall goal thing),72-getRight(),chassis.getPose().theta);
+    chassis.turnToHeading(90,1500);
+    chassis.setPose(getBack()+(lenght of tall goal thing),72-getLeft(),chassis.getPose().theta);
+    chassis.moveToPose(37,48,chassis.getPose().theta,1500);
+    spinChoice("up",2000); //spins choice motor up for 2 seconds to score in tall goal
+    pros::delay(5000);
+    stopIntake(); // stops intake
+
     */
 
     //chassis.turnToHeading(-45,2500);
