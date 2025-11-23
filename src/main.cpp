@@ -44,7 +44,7 @@ pros::Motor choice(6, pros::MotorGears::blue);
 pros::Distance leftSensor(13);
 pros::Distance rightSensor(1);
 pros::Distance forwardSensor(14);
-pros::Distance backSensor(19);
+pros::Distance backSensor(18);
 
 pros::Optical opticalSensor(2);// ================
 // SENSORS (used for odom/drivetrain)
@@ -74,10 +74,10 @@ lemlib::ControllerSettings linearController(18.75, // proportional gain (kP)
                                               0, // integral gain (kI)
                                               8.61, // derivative gain (kD)
                                               0, // anti windup
-                                              0, // small error range, in inches
-                                              0, // small error range timeout, in milliseconds
-                                              0, // large error range, in inches
-                                              0, // large error range timeout, in milliseconds
+                                              .5, // small error range, in inches
+                                              700, // small error range timeout, in milliseconds
+                                              4, // large error range, in inches
+                                              2000, // large error range timeout, in milliseconds
                                               0 // maximum acceleration (slew)
 );
 
@@ -87,10 +87,10 @@ lemlib::ControllerSettings angularController(3.36, // proportional gain (kP)
                                               0, // integral gain (kI)
                                               20, // derivative gain (kD)
                                               0, // anti windup
-                                              0, // small error range, in inches
-                                              0, // small error range timeout, in milliseconds
-                                              0, // large error range, in inches
-                                              0, // large error range timeout, in milliseconds
+                                              .5, // small error range, in inches
+                                              700, // small error range timeout, in milliseconds
+                                              4, // large error range, in inches
+                                              2000, // large error range timeout, in milliseconds
                                               0 // maximum acceleration (slew)
 );
 
@@ -133,6 +133,7 @@ void initialize() {
     pros::lcd::initialize(); // initialize brain screen
 
     chassis.calibrate();     // calibrate sensors
+    imu.set_heading(270);
 
     // optional but recommended: turn on optical LED
     opticalSensor.set_led_pwm(100);
@@ -223,18 +224,24 @@ void rejectIntake() {
 double inchesToCm(double inches) {
     return inches * 2.54;
 }
+double mmToInches(double mm) {
+    return mm / 25.4;
+}
+
 
 // Set only the X coordinate (keep Y and heading)
-void setPoseX(double newX) {
-    lemlib::Pose pose = chassis.getPose();       // get current pose
-    chassis.setPose(newX, pose.y, pose.theta);
+void setPoseX(double measuredX) {
+    double correctedX = measuredX + 4.5;    // shift to robot center
+    lemlib::Pose pose = chassis.getPose();
+    chassis.setPose(correctedX, pose.y, pose.theta);
 }
 
-// Set only the Y coordinate (keep X and heading)
-void setPoseY(double newY) {
+void setPoseY(double measuredY) {
+    double correctedY = measuredY + 4.5;    // shift to robot center
     lemlib::Pose pose = chassis.getPose();
-    chassis.setPose(pose.x, newY, pose.theta);
+    chassis.setPose(pose.x, correctedY, pose.theta);
 }
+
 
 // Set only the heading (keep X and Y)
 void setPoseTheta(double newTheta) {
@@ -242,7 +249,25 @@ void setPoseTheta(double newTheta) {
     chassis.setPose(pose.x, pose.y, newTheta);
 }
 
+// === LEFT SENSOR ===
+double getLeftDistanceInches(double offset = 4.5) {
+    return mmToInches(leftSensor.get()) + offset;
+}
 
+// === RIGHT SENSOR ===
+double getRightDistanceInches(double offset = 4.5) {
+    return mmToInches(rightSensor.get()) + offset;
+}
+
+// === FORWARD SENSOR ===
+double getForwardDistanceInches(double offset = 4.5) {
+    return mmToInches(forwardSensor.get()) + offset;
+}
+
+// === BACK SENSOR ===
+double getBackDistanceInches(double offset = 4.5) {
+    return mmToInches(backSensor.get()) + offset;
+}
 
 
 void spinChoice(const std::string& direction, int duration = 0) {
@@ -273,9 +298,18 @@ void spinChoice(const std::string& direction, int duration = 0) {
 void autonomous() {
    // Read documentation for help: https://lemlib.readthedocs.io/en/stable/api/chassis.html
    // DO NOTTTTT DELETE ANY CODE I ALREADY PUT HERE.
-   
-    chassis.setPose(0, 0, 0);
+    // compute Y from left distance sensor (mm → inches + sensor→center offset)
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
+    double fieldX = mmToInches(leftSensor.get()) + 4.5;
+
+    // grab whatever heading the IMU/odom thinks we have (should be ~270)
+    double theta = chassis.getPose().theta;
+
+    // set pose with the measured X/Y, keep heading consistent with IMU
+    chassis.setPose(fieldX, 15.25, theta);
+
+    chassis.moveToPose(chassis.getPose().x,24,chassis.getPose().theta,90000);
+    chassis.turnToHeading(180,5000);
     /*
     pros::delay(1000); // wait for 1 second before starting autonomous
     spinIntake();
@@ -285,7 +319,6 @@ void autonomous() {
     chassis.moveToPose(15,29,72.5,14000, {.maxSpeed = 113}); // Move forward to intake rings
     spinChoice("down", 2000); // Score lower goal
     */
-    chassis.moveToPose(0, 24, 0, 5000);
     }
 
 
