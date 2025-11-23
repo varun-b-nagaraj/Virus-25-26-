@@ -124,7 +124,7 @@ lemlib::Chassis chassis(drivetrain,        // drivetrain settings
 
 pros::adi::Pneumatics MogoMech('b', false); // Pneumatics on port E
 pros::adi::Pneumatics Descorer('c', false); // Pneumatics on port E
-pros::adi::Pneumatics Grabber('a', false); // Pneumatics on port E
+pros::adi::Pneumatics Grabber('a', true); // Pneumatics on port E
 
 /**
 * Runs initialization code. This occurs as soon as the program is started.
@@ -341,12 +341,20 @@ void autonomous() {
     chassis.turnToHeading(-92,1500);
     pros::delay(500);
     chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
-    Grabber.set_value(true); // extend descorer
-    chassis.moveToPose(32,chassis.getPose().y,chassis.getPose().theta,1500,{.forwards = false, .maxSpeed = 50});
+    chassis.moveToPose(31,chassis.getPose().y,chassis.getPose().theta,1500,{.forwards = false, .maxSpeed = 30});
     //chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
     // spinIntake(); //spins intake for 2 seconds to make sure ball is in
-    pros::delay(500);                                                           
+    pros::delay(500);                     
+    chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);                                      
     spinChoice("up",4000); //spins choice motor up for 2 seconds to score in tall goal
+    Grabber.set_value(false); // extend descorer
+    pros::delay(500);
+    chassis.moveToPose(10,48,chassis.getPose().theta,2500);
+    pros::delay(1500);
+    chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
+    chassis.moveToPose(31,chassis.getPose().y,chassis.getPose().theta,1500,{.forwards = false, .maxSpeed = 50});
+                                          
+
     /*
     chassis.moveToPose(24,48,chassis.getPose().theta,2500); 
     orrrrrr 
