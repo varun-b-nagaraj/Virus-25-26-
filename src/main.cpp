@@ -20,20 +20,20 @@ pros::Controller controller(pros::E_CONTROLLER_MASTER);
 // ====================
 // DRIVETRAIN HARDWARE
 // ====================
-pros::MotorGroup leftMotors({-15, -12},
+pros::MotorGroup leftMotors({-16, -17},
                            pros::MotorGearset::blue); // left motor group - ports 1 and 2 (reversed)
-pros::MotorGroup rightMotors({18, 14},
+pros::MotorGroup rightMotors({9, 10},
                             pros::MotorGearset::blue); // right motor group - ports 3 and 4 (unreversed)
 
 
 // ================
 // INTAKE (NEW)
 // ================
-pros::Motor intake1(-16, pros::MotorGears::blue);
-pros::Motor intake2(20, pros::MotorGears::blue);
-pros::Motor intake3(-2, pros::MotorGears::blue);
+pros::Motor intake1(-20, pros::MotorGears::blue);
+pros::Motor intake2(15, pros::MotorGears::blue);
+pros::Motor intake3(8, pros::MotorGears::blue);
 
-pros::Motor choice(8, pros::MotorGears::blue);
+pros::Motor choice(6, pros::MotorGears::blue);
 
 // =====================
 // UNUSED SUBSYSTEMS (commented out but kept for reference)
@@ -41,19 +41,20 @@ pros::Motor choice(8, pros::MotorGears::blue);
 // pros::adi::Pneumatics MogoMech('h', true); // Pneumatics on port H
 // pros::Motor highStake(7, pros::MotorGears::red);
 // pros::Motor leftArm(20, pros::MotorGears::green);
-pros::Distance leftSensor('A');
-pros::Distance rightSensor('B');
-pros::Distance forwardSensor('C');
+pros::Distance leftSensor(13);
+pros::Distance rightSensor(1);
+pros::Distance forwardSensor(14);
+pros::Distance backSensor(19);
 
-pros::Optical opticalSensor(4);// ================
+pros::Optical opticalSensor(2);// ================
 // SENSORS (used for odom/drivetrain)
 // ================
-pros::Imu imu(16);                    // IMU
-pros::Rotation verticalEnc(-17);  // Rotation sensor on port 8, reversed
-pros::Rotation horizontalEnc(3);  // Rotation sensor on port 9, reversed
+pros::Imu imu(12);                    // IMU
+pros::Rotation verticalEnc(11);  // Rotation sensor on port 8, reversed
+// pros::Rotation horizontalEnc(3);  // Rotation sensor on port 9, reversed
 // Tracking wheel object (Vertical). 2" wheel, 0" offset (update if measured differently).
 lemlib::TrackingWheel vertical(&verticalEnc, lemlib::Omniwheel::NEW_2, 1.5);
-lemlib::TrackingWheel horizontal(&horizontalEnc, lemlib::Omniwheel::NEW_2, 0);
+// lemlib::TrackingWheel horizontal(&horizontalEnc, lemlib::Omniwheel::NEW_2, 0);
 
 
 
@@ -95,7 +96,7 @@ lemlib::ControllerSettings angularController(8,  // kP
 // sensors for odometry
 lemlib::OdomSensors sensors(&vertical,  // vertical tracking wheel
                            nullptr,    // vertical tracking wheel 2
-                           &horizontal,    // horizontal tracking wheel
+                           nullptr,    // horizontal tracking wheel
                            nullptr,    // horizontal tracking wheel 2
                            &imu);      // inertial sensor
 
@@ -127,40 +128,37 @@ pros::adi::Pneumatics MogoMech('e', false); // Pneumatics on port E
 * to keep execution time for this mode under a few seconds.
 */
 void initialize() {
-   pros::lcd::initialize(); // initialize brain screen
-  
-   chassis.calibrate();     // calibrate sensors
-   // chassis.setPose({0, 0, 0}); // set the robot's pose to 0, 0, 0
+    pros::lcd::initialize(); // initialize brain screen
 
+    chassis.calibrate();     // calibrate sensors
 
-   // chassis.turnToHeading(90, 100000); // turn to heading to calibrate IMU
-   // --- Unused subsystems commented out ---
-   // highStake.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-   // leftArm.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+    // optional but recommended: turn on optical LED
+    opticalSensor.set_led_pwm(100);
 
+    pros::Task screenTask([&]() {
+        while (true) {
+            // pose
+            pros::lcd::print(0, "X: %.2f", chassis.getPose().x);
+            pros::lcd::print(1, "Y: %.2f", chassis.getPose().y);
+            pros::lcd::print(2, "Theta: %.2f", chassis.getPose().theta);
 
-   // thread for brain screen and position logging
-   pros::Task screenTask([&]() {
-       while (true) {
-           // print robot location to the brain screen
-           pros::lcd::print(0, "X: %f", chassis.getPose().x);         // x
-           pros::lcd::print(1, "Y: %f", chassis.getPose().y);         // y
-           pros::lcd::print(2, "Theta: %f", chassis.getPose().theta); // heading
-           pros::lcd::print(3, "Color Hue:", opticalSensor.get_hue());
-           pros::lcd::print(4, "Proximity L: %f", opticalSensor.get_proximity());
-            pros::lcd::print(5, "Distance L: %f", leftSensor.get());
-            pros::lcd::print(6, "Distance R: %f", rightSensor.get());
-            pros::lcd::print(7, "Distance F: %f", forwardSensor.get());
+            // optical
+            pros::lcd::print(3, "Hue: %d", (int)opticalSensor.get_hue());
+            pros::lcd::print(4, "Proximity: %d", (int)opticalSensor.get_proximity());
 
-           
+            // distance sensors (mm, ints)
+            pros::lcd::print(5, "Dist L: %d", (int)leftSensor.get());
+            pros::lcd::print(6, "Dist R: %d", (int)rightSensor.get());
+            pros::lcd::print(7, "Dist F: %d", (int)forwardSensor.get());
+            // if you want back sensor too, temporarily swap it in:
+            // pros::lcd::print(7, "Dist B: %d", (int)backSensor.get());
 
-           // log position telemetry
-           lemlib::telemetrySink()->info("Chassis pose: {}", chassis.getPose());
-           // delay to save resources
-           pros::delay(50);
-       }
-   });
+            lemlib::telemetrySink()->info("Chassis pose: {}", chassis.getPose());
+            pros::delay(50);
+        }
+    });
 }
+
 
 
 /**
@@ -372,109 +370,119 @@ void autonomous() {
 
 // === Driver control ===
 void opcontrol() {
-   chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST);
+    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST);
 
-  while (true) {
-    // joystick
-    int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
-    int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
-
-    // slowdown combo (kept): L2 + L1
-    bool slowdown = controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2) &&
-                    controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1);
-
-    // shape drive input
-    leftY = scaleInput(leftY);
-    rightX = scaleInput(rightX);
-
-    if (slowdown) {
-        leftY = static_cast<int>(leftY * 0.5);
-        rightX = static_cast<int>(rightX * 0.5);
-    }
-
-    // drive
-    chassis.arcade(leftY, rightX);
-
-    // CHOICE MOTOR WITH BLUE-FLIP LOGIC
-    // state persists between loop iterations
+    // state for blue-flip logic (persist across loop)
     static bool flippingBlue = false;
     static uint32_t flipStartTime = 0;
     static int flipDirection = 0;      // +1 or -1
     static bool lastSeesBlue = false;
 
-    // Base command from controller (L2 up, L1 down)
-    int choiceCmd = 0;
-    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
-        choiceCmd = 600;      // spin up
-    } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
-        choiceCmd = -600;     // spin down
-    } else {
-        choiceCmd = 0;
-    }
+    while (true) {
+        // === DRIVE ===
+        int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
+        int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
 
-    // Optical sensor read
-    int hue = opticalSensor.get_hue();
-    int prox = opticalSensor.get_proximity();
+        // slowdown combo: L2 + L1
+        bool slowdown = controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2) &&
+                        controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1);
 
-    // basic blue detection (tune as needed)
-    bool seesBlue = (prox > 120 && hue > 180 && hue < 260);
+        leftY = scaleInput(leftY);
+        rightX = scaleInput(rightX);
 
-    uint32_t now = pros::millis();
-
-    // Start a flip on a new blue detection while spinning (either direction)
-    if (!flippingBlue && !lastSeesBlue && seesBlue && choiceCmd != 0) {
-        flippingBlue = true;
-        flipStartTime = now;
-        // flip opposite of current direction
-        flipDirection = (choiceCmd > 0 ? -1 : 1);
-    }
-
-    // 4) Handle flip timing (delay + eject window)
-    if (flippingBlue) {
-        const int FLIP_DELAY_MS = 50;        // wait a bit after seeing blue
-        const int FLIP_DURATION_MS = 200;    // how long to eject
-
-        uint32_t dt = now - flipStartTime;
-
-        if (dt >= FLIP_DELAY_MS && dt < FLIP_DELAY_MS + FLIP_DURATION_MS) {
-            // in eject window: force opposite direction
-            choiceCmd = flipDirection * 600;
-        } else if (dt >= FLIP_DELAY_MS + FLIP_DURATION_MS) {
-            // done flipping; allow new detections
-            flippingBlue = false;
-            // after this, choiceCmd is whatever L1/L2 says this loop
+        if (slowdown) {
+            leftY = static_cast<int>(leftY * 0.5);
+            rightX = static_cast<int>(rightX * 0.5);
         }
+
+        chassis.arcade(leftY, rightX);
+
+        // ============================
+        // CHOICE MOTOR WITH BLUE-FLIP
+        // ============================
+        int choiceCmd = 0;
+
+        bool choiceUp   = controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2); // score high
+        bool choiceDown = controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1); // score low
+
+        if (choiceUp) {
+            choiceCmd = 600;      // spin up
+        } else if (choiceDown) {
+            choiceCmd = -600;     // spin down
+        } else {
+            choiceCmd = 0;
+        }
+
+        // Optical sensor read
+        int hue = opticalSensor.get_hue();
+
+        // basic blue detection (tune as needed)
+        bool seesBlue = (hue > 160 && hue < 260);
+
+        uint32_t now = pros::millis();
+
+        // Start a flip on a new blue detection while spinning (either direction)
+        if (!flippingBlue && !lastSeesBlue && seesBlue && choiceCmd != 0) {
+            flippingBlue = true;
+            flipStartTime = now;
+            // flip opposite of current direction
+            flipDirection = (choiceCmd > 0 ? -1 : 1);
+        }
+
+        // Handle flip timing (delay + eject window)
+        if (flippingBlue) {
+            const int FLIP_DELAY_MS    = 50;   // wait a bit after seeing blue
+            const int FLIP_DURATION_MS = 500;  // how long to eject
+
+            uint32_t dt = now - flipStartTime;
+
+            if (dt >= FLIP_DELAY_MS && dt < FLIP_DELAY_MS + FLIP_DURATION_MS) {
+                // in eject window: force opposite direction
+                choiceCmd = flipDirection * 600;
+            } else if (dt >= FLIP_DELAY_MS + FLIP_DURATION_MS) {
+                // done flipping; allow new detections
+                flippingBlue = false;
+                // after this, choiceCmd is whatever L1/L2 says this loop
+            }
+        }
+
+        lastSeesBlue = seesBlue;
+
+        // Apply choice motor command
+        choice.move_velocity(choiceCmd);
+
+        // ============================
+        // INTAKE CONTROL
+        // ============================
+        int intakeCmd = 0;
+
+        bool intakeReverseButton = controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1);
+        bool intakeForwardButton = controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2);
+
+        // When using the choice motor (up or down), always push rings forward
+        if (choiceUp || choiceDown || intakeForwardButton) {
+            intakeCmd = -600;          // forward
+        } else if (intakeReverseButton) {
+            intakeCmd = 600;         // reverse
+        } else {
+            intakeCmd = 0;            // stop
+        }
+
+        intake1.move_velocity(intakeCmd);
+        intake2.move_velocity(intakeCmd);
+        intake3.move_velocity(intakeCmd);
+
+        // ============================
+        // PNEUMATICS
+        // ============================
+        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_UP)) {
+            MogoMech.extend();
+        } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN)) {
+            MogoMech.retract();
+        }
+
+        pros::delay(10);
     }
-
-    lastSeesBlue = seesBlue;
-
-    //Apply choice command
-    choice.move_velocity(choiceCmd);
-    // ========= END CHOICE LOGIC =========
-
-
-    // === Intake control (R1 forward, R2 reverse) ===
-    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) {
-        intake1.move_velocity(600);
-        intake2.move_velocity(600);
-        intake3.move_velocity(600);
-    } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
-        intake1.move_velocity(-600);
-        intake2.move_velocity(-600);
-        intake3.move_velocity(-600);
-    } else {
-        intake1.move_velocity(0);
-        intake2.move_velocity(0);
-        intake3.move_velocity(0);
-    }
-
-    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_UP)) {
-        MogoMech.extend();
-    } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN)) {
-        MogoMech.retract();
-    }
-
-    pros::delay(10);
-  }
 }
+
 
