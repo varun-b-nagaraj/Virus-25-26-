@@ -311,55 +311,56 @@ void autonomous() {
     // set pose with the measured X/Y, keep heading consistent with IMU
     chassis.setPose(fieldX, 15.25, theta);
 
-    chassis.moveToPose(chassis.getPose().x,23,chassis.getPose().theta,1000);
-    chassis.turnToHeading(90,1000);
-    pros::delay(500);
-    chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
-    //spinIntake();
-    chassis.moveToPose(36,chassis.getPose().y,chassis.getPose().theta,1500);
-    chassis.moveToPose(50,chassis.getPose().y,chassis.getPose().theta,2500, {.maxSpeed = 40}); // Use early exit params later.
-    pros::delay(500);
-    chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
-    /*
-    chassis.turnToPoint(24,48,1500);
-    chassis.moveToPose(24,48,chassis.getPose().theta,2500); 
-    orrrrrr 
-    { Goes by the line
-    chassis.turnToHeading(270,1500);
-    chassis.moveToPose(24,24,chassis.getPose().theta,2500);
-    chassis.setPose(getFront(),72-getRight(),chassis.getPose().theta);
-    chassis.turnToHeading(0,1500);
-    chassis.moveToPose(24,48,chassis.getPose().theta,2500);
-    }
-    chassis.turnToHeading(270,1500);
-    chassis.setPose(getFront()+(lenght of tall goal thing),72-getRight(),chassis.getPose().theta);
-    grabber.extend();
-    chassis.moveToPose(14,chassis.getPose().y,chassis.getPose().theta,2500,{.maxSpeed = 50});
-    spinIntakeMS(2000); //spins intake for 2 seconds to make sure ball is in
-    spinIntake(); // keeps intake spinning to hold ball in
-    chassis.moveToPose(24,48,chassis.getPose().theta,2500,{.forwards = false}); 
-    grabber.retract();
-    chassis.setPose(getFront()+(lenght of tall goal thing),72-getRight(),chassis.getPose().theta);
-    chassis.moveToPose(37,48,chassis.getPose().theta,1500);
-    chassis.setPose(getFront()+(lenght of tall goal thing),72-getRight(),chassis.getPose().theta);
-    spinChoice("up",2000); //spins choice motor up for 2 seconds to score in tall goal
-    pros::delay(5000);
-    stopIntake(); // stops intake
+    // Starting pose  
+// chassis.setPose(0, 0, 0); - True Origin
 
-    */
+// Path points
+chassis.setPose(-48, 11, 0, 5000); // - starting point
 
-    //chassis.turnToHeading(-45,2500);
-    //chassis.moveToPose(24,56,chassis.getPose().theta,2500);
-    //chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
-    /*
-    pros::delay(1000); // wait for 1 second before starting autonomous
-    spinIntake();
-    chassis.moveToPose(0,27,0,9000, {.maxSpeed = 113}); // Move forward to intake rings
-    chassis.turnToHeading(72.5,5000);
-    pros::delay(10000);
-    chassis.moveToPose(15,29,72.5,14000, {.maxSpeed = 113}); // Move forward to intake rings
-    spinChoice("down", 2000); // Score lower goal
-    */
+chassis.turnToPoint(-24,24,5000);
+
+chassis.moveToPose(-24, 24, 135, 5000);
+
+chassis.moveToPose(-43, 48, 270, 5000);
+
+// -31.5 stays
+chassis.moveToPose(-31.5, 48, 270, 5000);
+
+// -56.5 stays
+chassis.moveToPose(-56.5, 48, 270, 5000);
+
+chassis.moveToPose(40, 48, 90, 5000);
+
+// 33.5 stays
+chassis.moveToPose(33.5, 48, 90, 5000);
+
+chassis.moveToPose(57, 48, 90, 5000);
+
+chassis.moveToPose(33, 48, 195, 5000);
+
+// keep decimals from Jerry export
+chassis.moveToPose(23.985, -24.0806, 135, 5000);
+
+chassis.moveToPose(48, -48, 90, 5000);
+
+chassis.moveToPose(33, -48, 90, 5000);
+
+chassis.moveToPose(57, -48, 90, 5000);
+
+chassis.moveToPose(48, -48, 315, 5000);
+
+chassis.moveToPose(-50, -48, 270, 5000);
+
+// -56.5 stays
+chassis.moveToPose(-56.5, -48, 270, 5000);
+
+// -31.5 stays
+chassis.moveToPose(-31.5, -48, 270, 5000);
+
+// keep -7 exactly as file has
+chassis.moveToPose(-64, -7, 0, 5000);
+
+
     }
 
 
