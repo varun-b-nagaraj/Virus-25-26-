@@ -44,7 +44,7 @@ pros::Motor choice(6, pros::MotorGears::blue);
 pros::Distance leftSensor(13);
 pros::Distance rightSensor(1);
 pros::Distance forwardSensor(14);
-pros::Distance backSensor(18);
+pros::Distance backSensor(5);
 
 pros::Optical opticalSensor(2);// ================
 // SENSORS (used for odom/drivetrain)
@@ -250,23 +250,23 @@ void setPoseTheta(double newTheta) {
 }
 
 // === LEFT SENSOR ===
-double getLeftDistanceInches(double offset = 4.5) {
+double getLeft(double offset = 4.5) {
     return mmToInches(leftSensor.get()) + offset;
 }
 
 // === RIGHT SENSOR ===
-double getRightDistanceInches(double offset = 4.5) {
+double getRight(double offset = 4.5) {
     return mmToInches(rightSensor.get()) + offset;
 }
 
 // === FORWARD SENSOR ===
-double getForwardDistanceInches(double offset = 4.5) {
+double getForward(double offset = 4.5) {
     return mmToInches(forwardSensor.get()) + offset;
 }
 
 // === BACK SENSOR ===
-double getBackDistanceInches(double offset = 4.5) {
-    return mmToInches(backSensor.get()) + offset;
+double getBack(double offset = 5.75) {
+    return (mmToInches(backSensor.get()) + offset);
 }
 
 
@@ -308,8 +308,13 @@ void autonomous() {
     // set pose with the measured X/Y, keep heading consistent with IMU
     chassis.setPose(fieldX, 15.25, theta);
 
-    chassis.moveToPose(chassis.getPose().x,24,chassis.getPose().theta,90000);
-    chassis.turnToHeading(180,5000);
+    chassis.moveToPose(chassis.getPose().x,22,chassis.getPose().theta,2000);
+    chassis.turnToHeading(90,1000);
+    pros::delay(500);
+    chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
+    spinIntake();
+    // chassis.moveToPose(30,chassis.getPose().y,chassis.getPose().theta,4000);
+    // chassis.moveToPose(48,chassis.getPose().y,chassis.getPose().theta,4000, {.maxSpeed = 80});
     /*
     pros::delay(1000); // wait for 1 second before starting autonomous
     spinIntake();
