@@ -144,14 +144,12 @@ void initialize() {
 
             // optical
             pros::lcd::print(3, "Hue: %d", (int)opticalSensor.get_hue());
-            pros::lcd::print(4, "Proximity: %d", (int)opticalSensor.get_proximity());
 
             // distance sensors (mm, ints)
-            pros::lcd::print(5, "Dist L: %d", (int)leftSensor.get());
-            pros::lcd::print(6, "Dist R: %d", (int)rightSensor.get());
-            pros::lcd::print(7, "Dist F: %d", (int)forwardSensor.get());
-            // if you want back sensor too, temporarily swap it in:
-            // pros::lcd::print(7, "Dist B: %d", (int)backSensor.get());
+            pros::lcd::print(4, "Dist L: %d", (int)leftSensor.get());
+            pros::lcd::print(5, "Dist R: %d", (int)rightSensor.get());
+            pros::lcd::print(6, "Dist F: %d", (int)forwardSensor.get());
+            pros::lcd::print(7, "Dist B: %d", (int)backSensor.get());
 
             lemlib::telemetrySink()->info("Chassis pose: {}", chassis.getPose());
             pros::delay(50);
@@ -226,19 +224,19 @@ double inchesToCm(double inches) {
 
 // Set only the X coordinate (keep Y and heading)
 void setPoseX(double newX) {
-    auto pose = chassis.getPose();       // get current pose
+    lemlib::Pose pose = chassis.getPose();       // get current pose
     chassis.setPose(newX, pose.y, pose.theta);
 }
 
 // Set only the Y coordinate (keep X and heading)
 void setPoseY(double newY) {
-    auto pose = chassis.getPose();
+    lemlib::Pose pose = chassis.getPose();
     chassis.setPose(pose.x, newY, pose.theta);
 }
 
 // Set only the heading (keep X and Y)
 void setPoseTheta(double newTheta) {
-    auto pose = chassis.getPose();
+    lemlib::Pose pose = chassis.getPose();
     chassis.setPose(pose.x, pose.y, newTheta);
 }
 
@@ -283,109 +281,6 @@ void autonomous() {
     pros::delay(10000);
     chassis.moveToPose(15,29,72.5,14000, {.maxSpeed = 113}); // Move forward to intake rings
     spinChoice("down", 2000); // Score lower goal
-
-
-
-   // // Use this to turn(positive is to the right and negative is to the left) and the timeout is in milliseconds
-   // // and specifies how long the robot has to complete the action
-   //chassis.turnToHeading(90, 5000);
-   // // Use this to move to a specific x, y coordinate (inches) and heading (degrees). The code below moves the robot 48 inches forward
-   // // 1 tile is 24 inches. The timeout is in milliseconds and specifies how long the robot has to complete the action
-   // // The third number is the heading you want the robot to be at once it reaches the point. 0 degrees is facing "forward"
-   // spinIntake();
-   // chassis.moveToPose(0, 38, 0, 2000);
-
-
-   // chassis.turnToHeading(35, 5000);
-   // chassis.moveToPose(10, 45, 35, 5000);
-   // pros::delay(1000);
-   // spinChoice("down");
-  
-   // // Spin the main intake/storage forward(Will spin forever) -- You can also use negative numbers to spin it backwards.
-           // intake1.move_velocity(600); // Spin intake 1 forward
-           // intake2.move_velocity(174); // Spin intake 2 forward (slower motor or different gear ratio)
-   // // You can also use the spinIntake() function I made above to do the same thing
-           // spinIntake();
-           // spinIntake(2000); // Spin intake for 2 seconds
-           // spinIntake(2000, false); // Spin intake in reverse for 2 seconds
-
-
-   // //When you want to stop just set the velocity to 0
-           // intake1.move_velocity(0);
-           // intake2.move_velocity(0);
-   // // You can also use the stopIntake() function I made above to do the same thing
-           // stopIntake();
-
-
-   // // To use the top motor to make your choice of the higher or lower goal use the choice motor.
-           // choice.move_velocity(200); // Spin choice motor to score to the higher scoring element
-           // choice.move_velocity(-200); // Spin choice motor to score to the lower scoring element
-           // choice.move_velocity(0); // Stop the choice motor
-   // // You can also use the spinChoice() function I made above to do the same thing
-           // spinChoice("up"); // Spin choice motor to score to the higher scoring element
-           // spinChoice("down"); // Spin choice motor to score to the lower scoring element
-           // spinChoice("up", 1000); // You can also add an optional timeout(ms) - Spin choice motor up for 1 second
-           // spinChoice("stop"); // Stop the choice motor
-
-
-   // // Chaining too much motion or moveToPose commands might create innacuracies, between commands a small timeout allows
-   // // the robot to settle and alleviates any innacuracies
-           // pros::delay(1000); // wait for 1 second
-
-
-   // // Pneumatics usage example. First code extends the pnuematic the second one shrinks it back.
-   // // Limit usuage as much as possible since air tank depletes and we can't shove it in like we do for driver controller
-   // // So low air pressure is worse in autonomous.
-           // MogoMech.extend();
-           // MogoMech.retract();
-  
-   //  Test routine below
-   // // === 1. DRIVE TEST ===
-   // pros::lcd::print(5, "Step 1: Driving forward & backward...");
-   // chassis.moveToPose(0, 24, 0, 3000);  // forward 24 inches
-   // pros::delay(500);
-   // chassis.moveToPose(0, 0, 0, 3000);   // back to start
-   // pros::delay(1000);
-
-
-   // // === 2. TURN TEST ===
-   // pros::lcd::print(5, "Step 2: Turning...");
-   // chassis.turnToHeading(90, 3000);     // turn 90° right
-   // pros::delay(500);
-   // chassis.turnToHeading(0, 3000);      // return to 0°
-   // pros::delay(1000);
-
-
-   // // === 3. INTAKE TEST ===
-   // pros::lcd::print(5, "Step 3: Testing intake...");
-   // spinIntake(1500, true);              // forward full speed for 1.5s
-   // pros::delay(500);
-   // spinIntake(1500, false);             // reverse slower for 1.5s
-   // pros::delay(1000);
-
-
-   // // === 4. CHOICE MOTOR TEST ===
-   // pros::lcd::print(5, "Step 4: Testing choice motor...");
-   // spinChoice("up", 1000);              // spin upward 1s
-   // pros::delay(500);
-   // spinChoice("down", 1000);            // spin downward 1s
-   // pros::delay(500);
-   // spinChoice("stop");                  // ensure stop
-   // pros::delay(1000);
-
-
-   // // === 5. DRIVE + INTAKE COMBINATION TEST ===
-   // pros::lcd::print(5, "Step 5: Combined movement...");
-   // spinIntake();                        // run intake continuously
-   // chassis.moveToPose(0, 24, 0, 3000);  // move forward while intaking
-   // stopIntake();                        // stop intake after motion
-   // pros::delay(1000);
-
-
-   // // === COMPLETE ===
-   // pros::lcd::print(5, "Autonomous test complete!");
-
-
 }
 
 
