@@ -259,7 +259,7 @@ double getLeft(double offset = 4.5) {
 
 // === RIGHT SENSOR ===
 double getRight(double offset = 4.5) {
-    return mmToInches(rightSensor.get()) + offset;
+    return (mmToInches(rightSensor.get()) + offset);
 }
 
 // === FORWARD SENSOR ===
@@ -278,9 +278,9 @@ void spinChoice(const std::string& direction, int duration = 0) {
 
 
    if (direction == "up") {
-       speed = 200;
+       speed = 600;
    } else if (direction == "down") {
-       speed = -200;
+       speed = -600;
    } else {
        choice.move_velocity(0);
        return; // invalid direction
@@ -328,7 +328,7 @@ void autonomous() {
     chassis.turnToHeading(90,1000);
     pros::delay(500);
     chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
-    //spinIntake();
+    spinIntake();
     chassis.moveToPose(36,chassis.getPose().y,chassis.getPose().theta,1500, {.minSpeed = 60, .earlyExitRange = 4});
     pros::delay(500);
     chassis.moveToPose(50,chassis.getPose().y,chassis.getPose().theta,2500, {.maxSpeed = 40});
@@ -338,11 +338,15 @@ void autonomous() {
     chassis.turnToHeading(-45,1500);
     pros::delay(500);
     chassis.moveToPose(24,50,chassis.getPose().theta,2500, {.maxSpeed = 100}); 
-    chassis.turnToHeading(-91,1500);
+    chassis.turnToHeading(-92,1500);
+    pros::delay(500);
     chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
     Grabber.set_value(true); // extend descorer
-    pros::delay(1000);
-
+    chassis.moveToPose(32,chassis.getPose().y,chassis.getPose().theta,1500,{.forwards = false, .maxSpeed = 50});
+    //chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
+    // spinIntake(); //spins intake for 2 seconds to make sure ball is in
+    pros::delay(500);                                                           
+    spinChoice("up",4000); //spins choice motor up for 2 seconds to score in tall goal
     /*
     chassis.moveToPose(24,48,chassis.getPose().theta,2500); 
     orrrrrr 
