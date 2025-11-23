@@ -122,9 +122,9 @@ lemlib::Chassis chassis(drivetrain,        // drivetrain settings
                        sensors);          // odometry sensors
 
 
-pros::adi::Pneumatics MogoMech('e', false); // Pneumatics on port E
-pros::adi::Pneumatics Descorer('e', false); // Pneumatics on port E
-pros::adi::Pneumatics Grabber('e', false); // Pneumatics on port E
+pros::adi::Pneumatics MogoMech('b', false); // Pneumatics on port E
+pros::adi::Pneumatics Descorer('c', false); // Pneumatics on port E
+pros::adi::Pneumatics Grabber('a', false); // Pneumatics on port E
 
 /**
 * Runs initialization code. This occurs as soon as the program is started.
@@ -329,15 +329,21 @@ void autonomous() {
     pros::delay(500);
     chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
     //spinIntake();
-    chassis.moveToPose(36,chassis.getPose().y,chassis.getPose().theta,1500);
+    chassis.moveToPose(36,chassis.getPose().y,chassis.getPose().theta,1500, {.minSpeed = 60, .earlyExitRange = 4});
     pros::delay(500);
     chassis.moveToPose(50,chassis.getPose().y,chassis.getPose().theta,2500, {.maxSpeed = 40});
     pros::delay(500);
-    //chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
-    //pros::delay(500);
-    //chassis.turnToPoint(24,48,1500);
+    // chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
+    pros::delay(500);
+    chassis.turnToHeading(-45,1500);
+    pros::delay(500);
+    chassis.moveToPose(24,50,chassis.getPose().theta,2500, {.maxSpeed = 100}); 
+    chassis.turnToHeading(-91,1500);
+    chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
+    Grabber.set_value(true); // extend descorer
+    pros::delay(1000);
+
     /*
-    chassis.turnToPoint(24,48,1500);
     chassis.moveToPose(24,48,chassis.getPose().theta,2500); 
     orrrrrr 
     { Goes by the line
