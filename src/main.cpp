@@ -295,7 +295,20 @@ void spinChoice(const std::string& direction, int duration = 0) {
        choice.move_velocity(0); // stop after the duration
    }
 }
-
+int slewRateLimit(int current, int target, int maxChange) {
+    int difference = target - current;
+    
+    if (std::abs(difference) <= maxChange) {
+        return target;  // We can reach the target in this cycle
+    }
+    
+    // Move toward target by maxChange amount
+    if (difference > 0) {
+        return current + maxChange;
+    } else {
+        return current - maxChange;
+    }
+}
 
 // === Autonomous ===
 void autonomous() {
@@ -317,9 +330,12 @@ void autonomous() {
     chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
     //spinIntake();
     chassis.moveToPose(36,chassis.getPose().y,chassis.getPose().theta,1500);
-    chassis.moveToPose(50,chassis.getPose().y,chassis.getPose().theta,2500, {.maxSpeed = 40}); // Use early exit params later.
     pros::delay(500);
-    chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
+    chassis.moveToPose(50,chassis.getPose().y,chassis.getPose().theta,2500, {.maxSpeed = 40});
+    pros::delay(500);
+    //chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
+    //pros::delay(500);
+    //chassis.turnToPoint(24,48,1500);
     /*
     chassis.turnToPoint(24,48,1500);
     chassis.moveToPose(24,48,chassis.getPose().theta,2500); 
@@ -364,40 +380,78 @@ void autonomous() {
 
 
 // === Driver control ===
+// Helper Functions
+
+// Scale input with quadratic curve
+
+// === Driver control ===
 void opcontrol() {
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST);
 
-    // state for blue-flip logic (persist across loop)
+    // State variables for smooth drive control
+    static int currentLeftY = 0;
+    static int currentRightX = 0;
+    
+    // Slew rate limits (adjust these values to tune smoothness)
+    const int NORMAL_SLEW_RATE = 15;      // Normal acceleration/deceleration per loop (10ms)
+    const int DIRECTION_CHANGE_SLEW_RATE = 8;  // Slower rate when changing directions
+    
+    // State for blue-flip logic
     static bool flippingBlue = false;
     static uint32_t flipStartTime = 0;
-    static int flipDirection = 0;      // +1 or -1
+    static int flipDirection = 0;
     static bool lastSeesBlue = false;
 
     while (true) {
-        // === DRIVE ===
+        // === DRIVE WITH SMOOTH TRANSITIONS ===
+        
+        // Read raw joystick values
         int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
         int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
 
-        leftY = scaleInput(leftY);
-        rightX = scaleInput(rightX);
+        // Apply scaling curve
+        int targetLeftY = scaleInput(leftY);
+        int targetRightX = scaleInput(rightX);
 
-        // slowdown combo: L2 + L1 (check AFTER reading buttons below)
-        
-        chassis.arcade(leftY, rightX);
+        // Determine if we're changing direction (sign change)
+        bool leftYDirectionChange = (currentLeftY > 0 && targetLeftY < 0) || 
+                                    (currentLeftY < 0 && targetLeftY > 0);
+        bool rightXDirectionChange = (currentRightX > 0 && targetRightX < 0) || 
+                                     (currentRightX < 0 && targetRightX > 0);
+
+        // Choose slew rate based on whether we're changing direction
+        int leftYSlewRate = leftYDirectionChange ? DIRECTION_CHANGE_SLEW_RATE : NORMAL_SLEW_RATE;
+        int rightXSlewRate = rightXDirectionChange ? DIRECTION_CHANGE_SLEW_RATE : NORMAL_SLEW_RATE;
+
+        // Apply slew rate limiting
+        currentLeftY = slewRateLimit(currentLeftY, targetLeftY, leftYSlewRate);
+        currentRightX = slewRateLimit(currentRightX, targetRightX, rightXSlewRate);
+
+        // Check for slowdown mode BEFORE applying to chassis
+        bool choiceUp   = controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2);
+        bool choiceDown = controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1);
+        bool slowdown = choiceUp && choiceDown;
+
+        // Apply slowdown multiplier if active
+        int finalLeftY = currentLeftY;
+        int finalRightX = currentRightX;
+        if (slowdown) {
+            finalLeftY = static_cast<int>(currentLeftY * 0.5);
+            finalRightX = static_cast<int>(currentRightX * 0.5);
+        }
+
+        // Send to chassis
+        chassis.arcade(finalLeftY, finalRightX);
 
         // ============================
         // CHOICE MOTOR WITH BLUE-FLIP
         // ============================
         
-        // First, check what the driver wants
-        bool choiceUp   = controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2); // score high
-        bool choiceDown = controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1); // score low
-        
         int driverChoiceCmd = 0;
         if (choiceUp) {
-            driverChoiceCmd = 600;      // spin up
+            driverChoiceCmd = 600;
         } else if (choiceDown) {
-            driverChoiceCmd = -600;     // spin down
+            driverChoiceCmd = -600;
         } else {
             driverChoiceCmd = 0;
         }
@@ -407,41 +461,34 @@ void opcontrol() {
         bool seesBlue = (hue > 160 && hue < 260);
         uint32_t now = pros::millis();
 
-        // Start a flip on a new blue detection while driver is actively scoring
+        // Start a flip on new blue detection
         if (!flippingBlue && !lastSeesBlue && seesBlue && driverChoiceCmd != 0) {
             flippingBlue = true;
             flipStartTime = now;
-            // Flip opposite of what driver is commanding
             flipDirection = (driverChoiceCmd > 0 ? -1 : 1);
         }
 
         // Determine final choice command
         int choiceCmd;
         if (flippingBlue) {
-            const int FLIP_DELAY_MS    = 50;   // wait a bit after seeing blue
-            const int FLIP_DURATION_MS = 5000;  // how long to eject
+            const int FLIP_DELAY_MS    = 50;
+            const int FLIP_DURATION_MS = 5000;
 
             uint32_t dt = now - flipStartTime;
 
             if (dt >= FLIP_DELAY_MS && dt < FLIP_DELAY_MS + FLIP_DURATION_MS) {
-                // OVERRIDE: use flip direction instead of driver input
                 choiceCmd = flipDirection * 600;
             } else if (dt >= FLIP_DELAY_MS + FLIP_DURATION_MS) {
-                // done flipping
                 flippingBlue = false;
-                choiceCmd = driverChoiceCmd; // back to normal
+                choiceCmd = driverChoiceCmd;
             } else {
-                // during delay period, use driver input
                 choiceCmd = driverChoiceCmd;
             }
         } else {
-            // No flip active, use driver command
             choiceCmd = driverChoiceCmd;
         }
 
         lastSeesBlue = seesBlue;
-
-        // Apply choice motor command
         choice.move_velocity(choiceCmd);
 
         // ============================
@@ -452,13 +499,12 @@ void opcontrol() {
         bool intakeReverseButton = controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1);
         bool intakeForwardButton = controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2);
 
-        // When using the choice motor (up or down), always push rings forward
         if (choiceUp || choiceDown || intakeForwardButton) {
-            intakeCmd = -600;          // forward
+            intakeCmd = -600;
         } else if (intakeReverseButton) {
-            intakeCmd = 600;         // reverse
+            intakeCmd = 600;
         } else {
-            intakeCmd = 0;            // stop
+            intakeCmd = 0;
         }
 
         intake1.move_velocity(intakeCmd);
@@ -474,21 +520,6 @@ void opcontrol() {
             MogoMech.retract();
         }
 
-        // Apply slowdown AFTER reading choice buttons
-        bool slowdown = choiceUp && choiceDown;
-        if (slowdown) {
-            // Re-read and scale down drive values
-            leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
-            rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
-            leftY = scaleInput(leftY);
-            rightX = scaleInput(rightX);
-            leftY = static_cast<int>(leftY * 0.5);
-            rightX = static_cast<int>(rightX * 0.5);
-            chassis.arcade(leftY, rightX);
-        }
-
         pros::delay(10);
     }
 }
-
-
