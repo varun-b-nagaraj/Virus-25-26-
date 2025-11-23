@@ -180,9 +180,9 @@ int scaleInput(int input) {
 
 // Spin intake forward for a duration (ms)
 void spinIntakeMS(int duration) {
-    intake1.move_velocity(600);
-    intake2.move_velocity(600);
-    intake3.move_velocity(200);
+    intake1.move_velocity(-600);
+    intake2.move_velocity(-600);
+    intake3.move_velocity(-200);
     pros::delay(duration);
     intake1.move_velocity(0);
     intake2.move_velocity(0);
@@ -191,9 +191,9 @@ void spinIntakeMS(int duration) {
 
 // Spin intake forward continuously
 void spinIntake() {
-    intake1.move_velocity(600);
-    intake2.move_velocity(600);
-    intake3.move_velocity(200);
+    intake1.move_velocity(-600);
+    intake2.move_velocity(-600);
+    intake3.move_velocity(-200);
 }
 
 // Stop all intake motors
@@ -205,9 +205,9 @@ void stopIntake() {
 
 // Spin intake reverse for a duration (ms)
 void rejectIntakeMS(int duration) {
-    intake1.move_velocity(-600);
-    intake2.move_velocity(-600);
-    intake3.move_velocity(-200);
+    intake1.move_velocity(600);
+    intake2.move_velocity(600);
+    intake3.move_velocity(200);
     pros::delay(duration);
     intake1.move_velocity(0);
     intake2.move_velocity(0);
@@ -216,9 +216,9 @@ void rejectIntakeMS(int duration) {
 
 // Spin intake reverse continuously
 void rejectIntake() {
-    intake1.move_velocity(-600);
-    intake2.move_velocity(-600);
-    intake3.move_velocity(-200);
+    intake1.move_velocity(600);
+    intake2.move_velocity(600);
+    intake3.move_velocity(200);
 }
 
 double inchesToCm(double inches) {
@@ -308,13 +308,16 @@ void autonomous() {
     // set pose with the measured X/Y, keep heading consistent with IMU
     chassis.setPose(fieldX, 15.25, theta);
 
-    chassis.moveToPose(chassis.getPose().x,22,chassis.getPose().theta,2000);
+    chassis.moveToPose(chassis.getPose().x,23,chassis.getPose().theta,1000);
     chassis.turnToHeading(90,1000);
     pros::delay(500);
     chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
     spinIntake();
-    // chassis.moveToPose(30,chassis.getPose().y,chassis.getPose().theta,4000);
-    // chassis.moveToPose(48,chassis.getPose().y,chassis.getPose().theta,4000, {.maxSpeed = 80});
+    chassis.moveToPose(36,chassis.getPose().y,chassis.getPose().theta,1500);
+    chassis.moveToPose(50,chassis.getPose().y,chassis.getPose().theta,2500, {.maxSpeed = 40});
+    
+    //pros::delay(500);
+    //chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
     /*
     pros::delay(1000); // wait for 1 second before starting autonomous
     spinIntake();
