@@ -50,10 +50,10 @@ pros::Optical opticalSensor(2);// ================
 // SENSORS (used for odom/drivetrain)
 // ================
 pros::Imu imu(12);                    // IMU
-pros::Rotation verticalEnc(11);  // Rotation sensor on port 8, reversed
+pros::Rotation verticalEnc(-11);  // Rotation sensor on port 8, reversed
 // pros::Rotation horizontalEnc(3);  // Rotation sensor on port 9, reversed
 // Tracking wheel object (Vertical). 2" wheel, 0" offset (update if measured differently).
-lemlib::TrackingWheel vertical(&verticalEnc, lemlib::Omniwheel::NEW_2, 1.5);
+lemlib::TrackingWheel vertical(&verticalEnc, lemlib::Omniwheel::NEW_2, 0);
 // lemlib::TrackingWheel horizontal(&horizontalEnc, lemlib::Omniwheel::NEW_2, 0);
 
 
@@ -70,9 +70,9 @@ lemlib::Drivetrain drivetrain(&leftMotors,                 // left motor group
 
 
 // lateral motion controller
-lemlib::ControllerSettings linearController(10, // proportional gain (kP)
+lemlib::ControllerSettings linearController(18.75, // proportional gain (kP)
                                               0, // integral gain (kI)
-                                              3, // derivative gain (kD)
+                                              8.61, // derivative gain (kD)
                                               0, // anti windup
                                               0, // small error range, in inches
                                               0, // small error range timeout, in milliseconds
@@ -285,7 +285,7 @@ void autonomous() {
     chassis.moveToPose(15,29,72.5,14000, {.maxSpeed = 113}); // Move forward to intake rings
     spinChoice("down", 2000); // Score lower goal
     */
-    chassis.moveToPose(0, 24, 0, 50000);
+    chassis.moveToPose(0, 24, 0, 5000);
     }
 
 
