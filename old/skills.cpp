@@ -315,19 +315,34 @@ void autonomous() {
 // chassis.setPose(0, 0, 0); - True Origin
 
 // Path points
-chassis.setPose(-48, 11, 0, 5000); // - starting point
+chassis.setPose(-11, 24, 0, 5000); // - starting point
 
-chassis.turnToPoint(-24,24,5000);
+chassis.moveToPose(-11, 38, 90, 5000);
 
-chassis.moveToPose(-24, 24, 135, 5000);
+chassis.turnToPoint(-24,48,5000);
 
-chassis.moveToPose(-43, 48, 270, 5000);
+chassis.moveToPose(-24, 48, chassis.getPose().theta, 5000);
+
+chassis.turnToHeading(45,5000);
+
+chassis.moveToPose(-48, 29, chassis.getPose().theta, 5000, {.forwards = false});
+
+chassis.turnToPoint(-48,15.5, 5000);
+
+chassis.setPose(getRight()-72,getForward()+5,chassis.getPose().theta);
+
+// put pneumatic down
+// spin intake
 
 // -31.5 stays
-chassis.moveToPose(-31.5, 48, 270, 5000);
+chassis.moveToPose(-48, 15.5, chassis.getPose().theta, 5000);
+
+chassis.setPose(getRight()-72,getForward()+5,chassis.getPose().theta);
 
 // -56.5 stays
-chassis.moveToPose(-56.5, 48, 270, 5000);
+chassis.moveToPose(-48, 40.5, chassis.getPose().theta, 5000, {.forwards = false});
+
+// score up
 
 chassis.moveToPose(40, 48, 90, 5000);
 
