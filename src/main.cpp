@@ -70,27 +70,29 @@ lemlib::Drivetrain drivetrain(&leftMotors,                 // left motor group
 
 
 // lateral motion controller
-lemlib::ControllerSettings linearController(15,  // kP
-                                       .9,   // kI
-                                           65, // kD
-                                           2,   // anti windup
-                                           1,   // small error (deg)
-                                           100, // small error timeout (ms)
-                                           3,   // large error (deg)
-                                           500, // large error timeout (ms)
-                                           0);  // max accel (slew)
+lemlib::ControllerSettings linearController(10, // proportional gain (kP)
+                                              0, // integral gain (kI)
+                                              3, // derivative gain (kD)
+                                              0, // anti windup
+                                              0, // small error range, in inches
+                                              0, // small error range timeout, in milliseconds
+                                              0, // large error range, in inches
+                                              0, // large error range timeout, in milliseconds
+                                              0 // maximum acceleration (slew)
+);
 
 
 // angular motion controller
-lemlib::ControllerSettings angularController(8,  // kP
-                                           0,   // kI old - -0.0042257
-                                           50, // kD
-                                           3,   // anti windup
-                                           1,   // small error (deg)
-                                           100, // small error timeout (ms)
-                                           3,   // large error (deg)
-                                           500, // large error timeout (ms)
-                                           0);  // max accel (slew)
+lemlib::ControllerSettings angularController(3.36, // proportional gain (kP)
+                                              0, // integral gain (kI)
+                                              20, // derivative gain (kD)
+                                              0, // anti windup
+                                              0, // small error range, in inches
+                                              0, // small error range timeout, in milliseconds
+                                              0, // large error range, in inches
+                                              0, // large error range timeout, in milliseconds
+                                              0 // maximum acceleration (slew)
+);
 
 
 // sensors for odometry
@@ -271,9 +273,10 @@ void spinChoice(const std::string& direction, int duration = 0) {
 void autonomous() {
    // Read documentation for help: https://lemlib.readthedocs.io/en/stable/api/chassis.html
    // DO NOTTTTT DELETE ANY CODE I ALREADY PUT HERE.
+   
     chassis.setPose(0, 0, 0);
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
-
+    /*
     pros::delay(1000); // wait for 1 second before starting autonomous
     spinIntake();
     chassis.moveToPose(0,27,0,9000, {.maxSpeed = 113}); // Move forward to intake rings
@@ -281,7 +284,9 @@ void autonomous() {
     pros::delay(10000);
     chassis.moveToPose(15,29,72.5,14000, {.maxSpeed = 113}); // Move forward to intake rings
     spinChoice("down", 2000); // Score lower goal
-}
+    */
+    chassis.moveToPose(0, 24, 0, 50000);
+    }
 
 
 // === Driver control ===
