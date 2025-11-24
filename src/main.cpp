@@ -329,9 +329,9 @@ void autonomous() {
     pros::delay(500);
     chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
     spinIntake();
-    chassis.moveToPose(36,chassis.getPose().y,chassis.getPose().theta,1500, {.minSpeed = 60, .earlyExitRange = 4});
+    chassis.moveToPose(36,chassis.getPose().y,chassis.getPose().theta,1500, {.minSpeed = 60, .earlyExitRange = 6});
     pros::delay(500);
-    chassis.moveToPose(50,chassis.getPose().y,chassis.getPose().theta,2500, {.maxSpeed = 40});
+    chassis.moveToPose(50,chassis.getPose().y,chassis.getPose().theta,2500, {.maxSpeed = 20});
     pros::delay(500);
     // chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
     pros::delay(500);
@@ -341,7 +341,7 @@ void autonomous() {
     chassis.turnToHeading(-92,1500);
     pros::delay(500);
     chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
-    chassis.moveToPose(31,chassis.getPose().y,chassis.getPose().theta,1500,{.forwards = false, .maxSpeed = 30});
+    chassis.moveToPose(29,chassis.getPose().y,chassis.getPose().theta,1500,{.forwards = false, .maxSpeed = 30});
     //chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
     // spinIntake(); //spins intake for 2 seconds to make sure ball is in
     pros::delay(500);                     
@@ -463,9 +463,9 @@ void opcontrol() {
 
         // === PNEUMATICS ===
         if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_UP)) {
-            Grabber.extend();
-        } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN)) {
             Grabber.retract();
+        } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN)) {
+            Grabber.extend();
         }
         
         bool rightNow = controller.get_digital(pros::E_CONTROLLER_DIGITAL_RIGHT);
