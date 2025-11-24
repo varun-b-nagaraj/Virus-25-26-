@@ -72,13 +72,13 @@ lemlib::Drivetrain drivetrain(&leftMotors,                 // left motor group
 // lateral motion controller
 lemlib::ControllerSettings linearController(18.75, // proportional gain (kP)
                                               0, // integral gain (kI)
-                                              8.61, // derivative gain (kD)
+                                              8.81, // derivative gain (kD)
                                               0, // anti windup
                                               .5, // small error range, in inches
                                               700, // small error range timeout, in milliseconds
                                               4, // large error range, in inches
                                               2000, // large error range timeout, in milliseconds
-                                              0 // maximum acceleration (slew)
+                                              110 // maximum acceleration (slew)
 );
 
 
@@ -314,7 +314,7 @@ int slewRateLimit(int current, int target, int maxChange) {
 void autonomous() {
    // Read documentation for help: https://lemlib.readthedocs.io/en/stable/api/chassis.html
    // DO NOTTTTT DELETE ANY CODE I ALREADY PUT HERE.
-    // compute Y from left distance sensor (mm → inches + sensor→center offset)
+// compute Y from left distance sensor (mm → inches + sensor→center offset
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
     double fieldX = mmToInches(leftSensor.get()) + 4.5;
 
@@ -405,6 +405,8 @@ void autonomous() {
 // === Driver control ===
 void opcontrol() {
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST);
+    int descore = 1;
+    bool descoreOut = false;
     while (true) {
         // === DRIVE ===
         int leftY  = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
@@ -464,6 +466,25 @@ void opcontrol() {
             Grabber.extend();
         } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN)) {
             Grabber.retract();
+        }
+        
+        bool rightNow = controller.get_digital(pros::E_CONTROLLER_DIGITAL_RIGHT);
+
+        if (rightNow && !descoreOut) {
+            // Toggle pneumatic
+            if (descore == 1) {
+                Descorer.extend();
+                descore = -1;
+            } else {
+                Descorer.retract();
+                descore = 1;
+            }
+
+            descoreOut = true;  // mark that the button was handled
+        }
+
+        if (!rightNow) {
+            descoreOut = false;  // reset when button released
         }
 
         pros::delay(10);
