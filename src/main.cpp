@@ -405,137 +405,65 @@ void autonomous() {
 // === Driver control ===
 void opcontrol() {
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST);
-
-    // State variables for smooth drive control
-    static int currentLeftY = 0;
-    static int currentRightX = 0;
-    
-    // Slew rate limits (adjust these values to tune smoothness)
-    const int NORMAL_SLEW_RATE = 15;      // Normal acceleration/deceleration per loop (10ms)
-    const int DIRECTION_CHANGE_SLEW_RATE = 8;  // Slower rate when changing directions
-    
-    // State for blue-flip logic
-    static bool flippingBlue = false;
-    static uint32_t flipStartTime = 0;
-    static int flipDirection = 0;
-    static bool lastSeesBlue = false;
-
     while (true) {
-        // === DRIVE WITH SMOOTH TRANSITIONS ===
-        
-        // Read raw joystick values
-        int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
+        // === DRIVE ===
+        int leftY  = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
         int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
 
-        // Apply scaling curve
-        int targetLeftY = scaleInput(leftY);
-        int targetRightX = scaleInput(rightX);
+        bool L1 = controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1);
+        bool L2 = controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2);
+        bool R1 = controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1);
+        bool R2 = controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2);
 
-        // Determine if we're changing direction (sign change)
-        bool leftYDirectionChange = (currentLeftY > 0 && targetLeftY < 0) || 
-                                    (currentLeftY < 0 && targetLeftY > 0);
-        bool rightXDirectionChange = (currentRightX > 0 && targetRightX < 0) || 
-                                     (currentRightX < 0 && targetRightX > 0);
+        bool slowdown = L1 && L2;
 
-        // Choose slew rate based on whether we're changing direction
-        int leftYSlewRate = leftYDirectionChange ? DIRECTION_CHANGE_SLEW_RATE : NORMAL_SLEW_RATE;
-        int rightXSlewRate = rightXDirectionChange ? DIRECTION_CHANGE_SLEW_RATE : NORMAL_SLEW_RATE;
+        leftY  = scaleInput(leftY);
+        rightX = scaleInput(rightX);
 
-        // Apply slew rate limiting
-        currentLeftY = slewRateLimit(currentLeftY, targetLeftY, leftYSlewRate);
-        currentRightX = slewRateLimit(currentRightX, targetRightX, rightXSlewRate);
-
-        // Check for slowdown mode BEFORE applying to chassis
-        bool choiceUp   = controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2);
-        bool choiceDown = controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1);
-        bool slowdown = choiceUp && choiceDown;
-
-        // Apply slowdown multiplier if active
-        int finalLeftY = currentLeftY;
-        int finalRightX = currentRightX;
         if (slowdown) {
-            finalLeftY = static_cast<int>(currentLeftY * 0.5);
-            finalRightX = static_cast<int>(currentRightX * 0.5);
+            leftY  = static_cast<int>(leftY * 0.5);
+            rightX = static_cast<int>(rightX * 0.5);
         }
 
-        // Send to chassis
-        chassis.arcade(finalLeftY, finalRightX);
+        chassis.arcade(leftY, rightX);
 
-        // ============================
-        // CHOICE MOTOR WITH BLUE-FLIP
-        // ============================
-        
-        int driverChoiceCmd = 0;
-        if (choiceUp) {
-            driverChoiceCmd = 600;
-        } else if (choiceDown) {
-            driverChoiceCmd = -600;
+        // === CHOICE + COLOR LOGIC ===
+        bool blueDetect = opticalSensor.get_hue() > 160 && opticalSensor.get_hue() < 260;
+        int inverse = blueDetect ? -1 : 1;
+
+        int intakeCmd = 0; // final intake command for this loop
+
+        if (L2) {
+            choice.move_velocity(inverse * -600);
+            intakeCmd = -600;     // run intake while using choice
+        } else if (L1) {
+            choice.move_velocity(inverse * 600);
+            intakeCmd = -600;     // same here
         } else {
-            driverChoiceCmd = 0;
+            choice.move_velocity(0);
         }
 
-        // Optical sensor read
-        int hue = opticalSensor.get_hue();
-        bool seesBlue = (hue > 160 && hue < 260);
-        uint32_t now = pros::millis();
-
-        // Start a flip on new blue detection
-        if (!flippingBlue && !lastSeesBlue && seesBlue && driverChoiceCmd != 0) {
-            flippingBlue = true;
-            flipStartTime = now;
-            flipDirection = (driverChoiceCmd > 0 ? -1 : 1);
-        }
-
-        // Determine final choice command
-        int choiceCmd;
-        if (flippingBlue) {
-            const int FLIP_DELAY_MS    = 50;
-            const int FLIP_DURATION_MS = 5000;
-
-            uint32_t dt = now - flipStartTime;
-
-            if (dt >= FLIP_DELAY_MS && dt < FLIP_DELAY_MS + FLIP_DURATION_MS) {
-                choiceCmd = flipDirection * 600;
-            } else if (dt >= FLIP_DELAY_MS + FLIP_DURATION_MS) {
-                flippingBlue = false;
-                choiceCmd = driverChoiceCmd;
+        // === R1/R2 intake control only if L1/L2 aren't held ===
+        if (!L1 && !L2) {
+            if (R1) {
+                intakeCmd = -600; // intake in
+            } else if (R2) {
+                intakeCmd = 600;  // intake out
             } else {
-                choiceCmd = driverChoiceCmd;
+                intakeCmd = 0;
             }
-        } else {
-            choiceCmd = driverChoiceCmd;
         }
 
-        lastSeesBlue = seesBlue;
-        choice.move_velocity(choiceCmd);
-
-        // ============================
-        // INTAKE CONTROL
-        // ============================
-        int intakeCmd = 0;
-
-        bool intakeReverseButton = controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1);
-        bool intakeForwardButton = controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2);
-
-        if (choiceUp || choiceDown || intakeForwardButton) {
-            intakeCmd = -600;
-        } else if (intakeReverseButton) {
-            intakeCmd = 600;
-        } else {
-            intakeCmd = 0;
-        }
-
+        // apply intake command
         intake1.move_velocity(intakeCmd);
         intake2.move_velocity(intakeCmd);
-        intake3.move_velocity(intakeCmd/3);
+        intake3.move_velocity(intakeCmd / 3);
 
-        // ============================
-        // PNEUMATICS
-        // ============================
+        // === PNEUMATICS ===
         if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_UP)) {
-            MogoMech.extend();
+            Grabber.extend();
         } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN)) {
-            MogoMech.retract();
+            Grabber.retract();
         }
 
         pros::delay(10);
