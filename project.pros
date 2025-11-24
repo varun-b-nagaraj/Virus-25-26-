@@ -1,7 +1,7 @@
 {
   "py/object": "pros.conductor.project.Project",
   "py/state": {
-    "project_name": "Virus(25-26)",
+    "project_name": "Red - Virus(25-26)",
     "target": "v5",
     "templates": {
       "LemLib": {
@@ -635,7 +635,8 @@
       }
     },
     "upload_options": {
-      "slot": 1
+      "slot": 1,
+      "description": "When we are on red team use this. And skills."
     },
     "use_early_access": false
   }
