@@ -22,7 +22,7 @@ pros::Controller controller(pros::E_CONTROLLER_MASTER);
 // ====================
 pros::MotorGroup leftMotors({-16, -17},
                            pros::MotorGearset::blue); // left motor group - ports 1 and 2 (reversed)
-pros::MotorGroup rightMotors({9, 10},
+pros::MotorGroup rightMotors({9, 8},
                             pros::MotorGearset::blue); // right motor group - ports 3 and 4 (unreversed)
 
 
@@ -30,8 +30,7 @@ pros::MotorGroup rightMotors({9, 10},
 // INTAKE (NEW)
 // ================
 pros::Motor intake1(-20, pros::MotorGears::blue);
-pros::Motor intake2(15, pros::MotorGears::blue);
-pros::Motor intake3(8, pros::MotorGears::green);
+pros::Motor intake2(-15, pros::MotorGears::blue);
 
 pros::Motor choice(6, pros::MotorGears::blue);
 
@@ -41,7 +40,7 @@ pros::Motor choice(6, pros::MotorGears::blue);
 // pros::adi::Pneumatics MogoMech('h', true); // Pneumatics on port H
 // pros::Motor highStake(7, pros::MotorGears::red);
 // pros::Motor leftArm(20, pros::MotorGears::green);
-pros::Distance leftSensor(13);
+pros::Distance leftSensor(10); //redid
 pros::Distance rightSensor(1);
 pros::Distance forwardSensor(14);
 pros::Distance backSensor(5);
@@ -70,27 +69,27 @@ lemlib::Drivetrain drivetrain(&leftMotors,                 // left motor group
 
 
 // lateral motion controller
-lemlib::ControllerSettings linearController(18.75, // proportional gain (kP)
+lemlib::ControllerSettings linearController(13, // proportional gain (kP)
                                               0, // integral gain (kI)
-                                              8.81, // derivative gain (kD)
+                                              42, // derivative gain (kD)
                                               0, // anti windup
-                                              .5, // small error range, in inches
-                                              700, // small error range timeout, in milliseconds
-                                              4, // large error range, in inches
-                                              2000, // large error range timeout, in milliseconds
-                                              110 // maximum acceleration (slew)
+                                              0, // small error range, in inches
+                                              0, // small error range timeout, in milliseconds
+                                              0, // large error range, in inches
+                                              0, // large error range timeout, in milliseconds
+                                              0 // maximum acceleration (slew)
 );
 
 
 // angular motion controller
-lemlib::ControllerSettings angularController(3.36, // proportional gain (kP)
+lemlib::ControllerSettings angularController(5.5, // proportional gain (kP)
                                               0, // integral gain (kI)
-                                              20, // derivative gain (kD)
+                                              18.5, // derivative gain (kD)
                                               0, // anti windup
-                                              .5, // small error range, in inches
-                                              700, // small error range timeout, in milliseconds
-                                              4, // large error range, in inches
-                                              1000, // large error range timeout, in milliseconds
+                                              2, // small error range, in inches
+                                              450, // small error range timeout, in milliseconds
+                                              6, // large error range, in inches
+                                              1500, // large error range timeout, in milliseconds
                                               0 // maximum acceleration (slew)
 );
 
@@ -185,43 +184,36 @@ int scaleInput(int input) {
 void spinIntakeMS(int duration) {
     intake1.move_velocity(-600);
     intake2.move_velocity(-600);
-    intake3.move_velocity(-200);
     pros::delay(duration);
     intake1.move_velocity(0);
     intake2.move_velocity(0);
-    intake3.move_velocity(0);
 }
 
 // Spin intake forward continuously
 void spinIntake() {
     intake1.move_velocity(-600);
     intake2.move_velocity(-600);
-    intake3.move_velocity(-200);
 }
 
 // Stop all intake motors
 void stopIntake() {
     intake1.move_velocity(0);
     intake2.move_velocity(0);
-    intake3.move_velocity(0);
 }
 
 // Spin intake reverse for a duration (ms)
 void rejectIntakeMS(int duration) {
     intake1.move_velocity(600);
     intake2.move_velocity(600);
-    intake3.move_velocity(200);
     pros::delay(duration);
     intake1.move_velocity(0);
     intake2.move_velocity(0);
-    intake3.move_velocity(0);
 }
 
 // Spin intake reverse continuously
 void rejectIntake() {
     intake1.move_velocity(600);
     intake2.move_velocity(600);
-    intake3.move_velocity(200);
 }
 
 double inchesToCm(double inches) {
@@ -315,6 +307,7 @@ void autonomous() {
    // Read documentation for help: https://lemlib.readthedocs.io/en/stable/api/chassis.html
    // DO NOTTTTT DELETE ANY CODE I ALREADY PUT HERE.
 // compute Y from left distance sensor (mm → inches + sensor→center offset
+
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
     double fieldX = mmToInches(leftSensor.get()) + 4.5;
 
@@ -341,7 +334,7 @@ void autonomous() {
     chassis.turnToHeading(-92,1500);
     pros::delay(500);
     chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
-    chassis.moveToPose(29,chassis.getPose().y,chassis.getPose().theta,1500,{.forwards = false, .maxSpeed = 30});
+    chassis.moveToPose(30.5,chassis.getPose().y,chassis.getPose().theta,1500,{.forwards = false, .maxSpeed = 30});
     //chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
     // spinIntake(); //spins intake for 2 seconds to make sure ball is in
     pros::delay(500);                     
@@ -352,8 +345,7 @@ void autonomous() {
     chassis.moveToPose(10,48,chassis.getPose().theta,2500);
     pros::delay(1500);
     chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
-    chassis.moveToPose(31,chassis.getPose().y,chassis.getPose().theta,1500,{.forwards = false, .maxSpeed = 50});
-                                          
+    chassis.moveToPose(31,chassis.getPose().y,chassis.getPose().theta,1500,{.forwards = false, .maxSpeed = 50});      
 
     /*
     chassis.moveToPose(24,48,chassis.getPose().theta,2500); 
@@ -459,7 +451,6 @@ void opcontrol() {
         // apply intake command
         intake1.move_velocity(intakeCmd);
         intake2.move_velocity(intakeCmd);
-        intake3.move_velocity(intakeCmd / 3);
 
         // === PNEUMATICS ===
         if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_UP)) {
