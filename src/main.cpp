@@ -40,7 +40,7 @@ pros::Motor choice(6, pros::MotorGears::blue);
 // pros::adi::Pneumatics MogoMech('h', true); // Pneumatics on port H
 // pros::Motor highStake(7, pros::MotorGears::red);
 // pros::Motor leftArm(20, pros::MotorGears::green);
-pros::Distance leftSensor(10); //redid
+pros::Distance leftSensor(4); //redid
 pros::Distance rightSensor(1);
 pros::Distance forwardSensor(14);
 pros::Distance backSensor(5);
@@ -72,26 +72,28 @@ lemlib::Drivetrain drivetrain(&leftMotors,                 // left motor group
 lemlib::ControllerSettings linearController(13, // proportional gain (kP)
                                               0, // integral gain (kI)
                                               42, // derivative gain (kD)
-                                              0, // anti windup
-                                              0, // small error range, in inches
+                                              3, // anti windup
+                                              1, // small error range, in inches
                                               0, // small error range timeout, in milliseconds
-                                              0, // large error range, in inches
-                                              0, // large error range timeout, in milliseconds
-                                              0 // maximum acceleration (slew)
+                                              3, // large error range, in inches
+                                              500, // large error range timeout, in milliseconds
+                                              20 // maximum acceleration (slew)
 );
 
 
 // angular motion controller
-lemlib::ControllerSettings angularController(5.5, // proportional gain (kP)
-                                              0, // integral gain (kI)
-                                              18.5, // derivative gain (kD)
-                                              0, // anti windup
-                                              2, // small error range, in inches
-                                              450, // small error range timeout, in milliseconds
-                                              6, // large error range, in inches
-                                              1500, // large error range timeout, in milliseconds
-                                              0 // maximum acceleration (slew)
+lemlib::ControllerSettings angularController(
+    5,  // kP (was 5)
+    0.0,  // kI
+    28.0, // kD (was 20)
+    0.0,  // anti-windup
+    1.0,  // small error range (deg) (was 2)
+    0,  // small error timeout (ms) (was 650)
+    3.0,  // large error range (deg) (was 6)
+    1000, // large error timeout (ms) (was 1500)
+    12    // max accel slew (was 0)
 );
+
 
 
 // sensors for odometry
@@ -245,7 +247,7 @@ void setPoseTheta(double newTheta) {
 }
 
 // === LEFT SENSOR ===
-double getLeft(double offset = 4.5) {
+double getLeft(double offset = 2.45) {
     return mmToInches(leftSensor.get()) + offset;
 }
 
@@ -260,7 +262,7 @@ double getForward(double offset = 4.5) {
 }
 
 // === BACK SENSOR ===
-double getBack(double offset = 5.75) {
+double getBack(double offset = 2.3) {
     return (mmToInches(backSensor.get()) + offset);
 }
 
@@ -309,23 +311,32 @@ void autonomous() {
 // compute Y from left distance sensor (mm → inches + sensor→center offset
 
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
-    double fieldX = mmToInches(leftSensor.get()) + 4.5;
+    double fieldX = mmToInches(leftSensor.get()) + 2.45;
 
     // grab whatever heading the IMU/odom thinks we have (should be ~270)
     double theta = chassis.getPose().theta;
 
     // set pose with the measured X/Y, keep heading consistent with IMU
-    chassis.setPose(fieldX, 15.25, theta);
+    chassis.setPose(fieldX, 16, theta);
 
-    chassis.moveToPose(chassis.getPose().x,23,chassis.getPose().theta,1000);
-    chassis.turnToHeading(90,1000);
-    pros::delay(500);
-    chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
-    spinIntake();
+    //chassis.moveToPose(chassis.getPose().x,16,chassis.getPose().theta,1000,{.minSpeed = 127});
+
+    chassis.moveToPose(48, 24, 90,3200, {.minSpeed = 100, .earlyExitRange = 6});
+    //pros::delay(100);
+    chassis.turnToHeading(315, 500);
+    chassis.moveToPose(58, 10, 315,3500, {.forwards = false, .maxSpeed = 115});
+
+    //chassis.turnToHeading(315, 1500);
+    //chassis.moveToPose(24, 24, 90,2500, {.forwards = false, .minSpeed = 60});
+    //pros::delay(500);
+    //chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
+    //spinIntake();
+    /*
     chassis.moveToPose(36,chassis.getPose().y,chassis.getPose().theta,1500, {.minSpeed = 60, .earlyExitRange = 6});
     pros::delay(500);
     chassis.moveToPose(50,chassis.getPose().y,chassis.getPose().theta,2500, {.maxSpeed = 20});
     pros::delay(500);
+    /*
     // chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
     pros::delay(500);
     chassis.turnToHeading(-45,1500);
@@ -346,7 +357,7 @@ void autonomous() {
     pros::delay(1500);
     chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
     chassis.moveToPose(31,chassis.getPose().y,chassis.getPose().theta,1500,{.forwards = false, .maxSpeed = 50});      
-
+    */
     /*
     chassis.moveToPose(24,48,chassis.getPose().theta,2500); 
     orrrrrr 
