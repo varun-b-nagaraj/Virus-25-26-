@@ -76,7 +76,7 @@ lemlib::ControllerSettings linearController(13, // proportional gain (kP)
                                               1, // small error range, in inches
                                               0, // small error range timeout, in milliseconds
                                               3, // large error range, in inches
-                                              500, // large error range timeout, in milliseconds
+                                              1000, // large error range timeout, in milliseconds
                                               20 // maximum acceleration (slew)
 );
 
@@ -247,7 +247,7 @@ void setPoseTheta(double newTheta) {
 }
 
 // === LEFT SENSOR ===
-double getLeft(double offset = 2.45) {
+double getLeft(double offset = 4.5) {
     return mmToInches(leftSensor.get()) + offset;
 }
 
@@ -311,7 +311,7 @@ void autonomous() {
 // compute Y from left distance sensor (mm → inches + sensor→center offset
 
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
-    double fieldX = mmToInches(leftSensor.get()) + 2.45;
+    double fieldX = mmToInches(leftSensor.get()) + 4.5;
 
     // grab whatever heading the IMU/odom thinks we have (should be ~270)
     double theta = chassis.getPose().theta;
@@ -324,10 +324,13 @@ void autonomous() {
     chassis.moveToPose(48, 24, 90,3200, {.minSpeed = 100, .earlyExitRange = 6});
     //pros::delay(100);
     chassis.turnToHeading(315, 500);
-    chassis.moveToPose(58, 10, 315,3500, {.forwards = false, .maxSpeed = 115});
-
-    //chassis.turnToHeading(315, 1500);
-    //chassis.moveToPose(24, 24, 90,2500, {.forwards = false, .minSpeed = 60});
+    chassis.moveToPose(54, 14, 315,3500, {.forwards = false, .maxSpeed = 115}); // change x to 58 next time.
+    chassis.moveToPose(24, 48, 315,2500,{.minSpeed = 100});
+    chassis.turnToHeading(270, 500);
+    pros::delay(250);
+    chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
+    pros::delay(250);
+    //chassis.moveToPose(12, 48, 270,2500);
     //pros::delay(500);
     //chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
     //spinIntake();
