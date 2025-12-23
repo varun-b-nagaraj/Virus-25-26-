@@ -257,7 +257,7 @@ double getRight(double offset = 4.5) {
 }
 
 // === FORWARD SENSOR ===
-double getForward(double offset = 4.5) {
+double getForward(double offset = 3) {
     return mmToInches(forwardSensor.get()) + offset;
 }
 
@@ -324,22 +324,38 @@ void autonomous() {
     chassis.moveToPose(48, 24, 90,3200, {.minSpeed = 100, .earlyExitRange = 6});
     //pros::delay(100);
     chassis.turnToHeading(315, 500);
-    chassis.moveToPose(54, 14, 315,3500, {.forwards = false, .maxSpeed = 115}); // change x to 58 next time.
-    chassis.moveToPose(24, 48, 315,2500,{.minSpeed = 100});
-    chassis.turnToHeading(270, 500);
-    pros::delay(250);
+    chassis.moveToPose(58, 10, 315,3500, {.forwards = false, .maxSpeed = 115}); // change x to 58 next time.
+    chassis.moveToPose(24, 48, 315,2500,{.minSpeed = 90});
+    chassis.turnToHeading(270, 750);
+    pros::delay(500);
     chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
-    pros::delay(250);
-    //chassis.moveToPose(12, 48, 270,2500);
-    //pros::delay(500);
+    pros::delay(500);
+    chassis.moveToPose(8, 48, 270,4500., {.minSpeed = 127});
+    pros::delay(1000);
+    chassis.moveToPose(46, 49, 270,3500., {.forwards = false, .minSpeed = 127});
+    pros::delay(1000);
+    chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
+    pros::delay(1000);
+    chassis.moveToPoint(36, 48, 2000, {.minSpeed = 80, .earlyExitRange = 2});
+    chassis.swingToHeading(180, DriveSide::LEFT, 1000, {.minSpeed = 110, .earlyExitRange = 1});
+    chassis.moveToPose(30, -48, 180, 4500,{.minSpeed = 110, .earlyExitRange = 3});
+    chassis.moveToPose(24, -48, 270, 4000);
+    pros::delay(800);
+    chassis.setPose(chassis.getPose().x, getLeft() - 72, chassis.getPose().theta);
+    pros::delay(800);
+    chassis.moveToPose(8, -48, 270, 4000, {.minSpeed = 127});
+    pros::delay(1000);
+    chassis.moveToPose(46, -48, 270, 4000, {.forwards = false, .minSpeed = 127});
     //chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
     //spinIntake();
+
+    // moveToPose()
     /*
     chassis.moveToPose(36,chassis.getPose().y,chassis.getPose().theta,1500, {.minSpeed = 60, .earlyExitRange = 6});
     pros::delay(500);
     chassis.moveToPose(50,chassis.getPose().y,chassis.getPose().theta,2500, {.maxSpeed = 20});
     pros::delay(500);
-    /*
+    
     // chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
     pros::delay(500);
     chassis.turnToHeading(-45,1500);
