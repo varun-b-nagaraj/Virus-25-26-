@@ -325,7 +325,8 @@ void autonomous() {
     spinIntake();
     //pros::delay(100);
     chassis.turnToHeading(315, 500);
-    chassis.moveToPose(58, 10, 315,3500, {.forwards = false, .maxSpeed = 115},  false); // change x to 58 next time.
+    chassis.moveToPose(58, 10, 315,2500, {.forwards = false, .maxSpeed = 115},  false); // change x to 58 next time.
+    chassis.waitUntil(4);
     spinChoice("up");
     pros::delay(500);
     spinChoice("stop");
@@ -337,11 +338,12 @@ void autonomous() {
     chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
     pros::delay(500);
     spinIntake();
-    chassis.moveToPose(8, 48, 270, 3000,{.earlyExitRange = 2});
+    chassis.moveToPose(8, 48, 270, 2000,{.earlyExitRange = 2});
     pros::delay(1000);
     //pros::delay(1000);
     //chassis.moveToPose(46, 49, 270,3500., {.forwards = false, .minSpeed = 127, .earlyExitRange = 2});
-    chassis.moveToPose(46, 49, 270, 3000, {.forwards = false, .earlyExitRange = 2});
+    chassis.moveToPose(46, 49, 270, 2000, {.forwards = false, .earlyExitRange = 2});
+    chassis.waitUntil(30);
     spinChoice("up");
     pros::delay(1000);
     stopIntake();
@@ -355,9 +357,10 @@ void autonomous() {
     chassis.setPose(chassis.getPose().x, getLeft() - 72, chassis.getPose().theta);
     pros::delay(800);
     spinIntake();
-    chassis.moveToPose(8, -48, 270, 3000,{.earlyExitRange = 2});
+    chassis.moveToPose(8, -48, 270, 2000,{.earlyExitRange = 2});
     pros::delay(1000);
-    chassis.moveToPose(46, -48, 270, 3000, {.forwards = false, .earlyExitRange = 2});
+    chassis.moveToPose(46, -48, 270, 2000, {.forwards = false, .earlyExitRange = 2});
+    chassis.waitUntil(30);
     spinChoice("up");
     //chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
     //spinIntake();
