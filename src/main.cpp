@@ -123,9 +123,9 @@ lemlib::Chassis chassis(drivetrain,        // drivetrain settings
                        sensors);          // odometry sensors
 
 
-pros::adi::Pneumatics MogoMech('b', false); // Pneumatics on port E
-pros::adi::Pneumatics Descorer('c', false); // Pneumatics on port E
-pros::adi::Pneumatics Grabber('a', true); // Pneumatics on port E
+pros::adi::Pneumatics MogoMech('e', false); // Pneumatics on port E
+pros::adi::Pneumatics Descorer('a', false); // Pneumatics on port E
+pros::adi::Pneumatics Grabber('c', false); // Pneumatics on port E
 
 /**
 * Runs initialization code. This occurs as soon as the program is started.
@@ -275,7 +275,7 @@ void spinChoice(const std::string& direction, int duration = 0) {
        speed = 600;
    } else if (direction == "down") {
        speed = -600;
-   } else {
+   } else if (direction == "stop") {
        choice.move_velocity(0);
        return; // invalid direction
    }
@@ -322,30 +322,43 @@ void autonomous() {
     //chassis.moveToPose(chassis.getPose().x,16,chassis.getPose().theta,1000,{.minSpeed = 127});
 
     chassis.moveToPose(48, 24, 90,3200, {.minSpeed = 100, .earlyExitRange = 6});
+    spinIntake();
     //pros::delay(100);
     chassis.turnToHeading(315, 500);
-    chassis.moveToPose(58, 10, 315,3500, {.forwards = false, .maxSpeed = 115}); // change x to 58 next time.
+    chassis.moveToPose(58, 10, 315,3500, {.forwards = false, .maxSpeed = 115},  false); // change x to 58 next time.
+    spinChoice("up");
+    pros::delay(500);
+    spinChoice("stop");
     chassis.moveToPose(24, 48, 315,2500,{.minSpeed = 90});
+    stopIntake();
     chassis.turnToHeading(270, 750);
     pros::delay(500);
+    Grabber.extend();
     chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
     pros::delay(500);
-    chassis.moveToPose(8, 48, 270,4500., {.minSpeed = 127});
+    spinIntake();
+    chassis.moveToPose(8, 48, 270, 3000,{.earlyExitRange = 2});
     pros::delay(1000);
-    chassis.moveToPose(46, 49, 270,3500., {.forwards = false, .minSpeed = 127});
+    //pros::delay(1000);
+    //chassis.moveToPose(46, 49, 270,3500., {.forwards = false, .minSpeed = 127, .earlyExitRange = 2});
+    chassis.moveToPose(46, 49, 270, 3000, {.forwards = false, .earlyExitRange = 2});
+    spinChoice("up");
     pros::delay(1000);
-    chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
-    pros::delay(1000);
-    chassis.moveToPoint(36, 48, 2000, {.minSpeed = 80, .earlyExitRange = 2});
+    stopIntake();
+    spinChoice("stop");
+    chassis.moveToPoint(34, 48, 2000, {.minSpeed = 80, .earlyExitRange = 2});
     chassis.swingToHeading(180, DriveSide::LEFT, 1000, {.minSpeed = 110, .earlyExitRange = 1});
     chassis.moveToPose(30, -48, 180, 4500,{.minSpeed = 110, .earlyExitRange = 3});
+    //chassis.setPose(72-getForward(),getRight()-72,chassis.getPose().theta);
     chassis.moveToPose(24, -48, 270, 4000);
     pros::delay(800);
     chassis.setPose(chassis.getPose().x, getLeft() - 72, chassis.getPose().theta);
     pros::delay(800);
-    chassis.moveToPose(8, -48, 270, 4000, {.minSpeed = 127});
+    spinIntake();
+    chassis.moveToPose(8, -48, 270, 3000,{.earlyExitRange = 2});
     pros::delay(1000);
-    chassis.moveToPose(46, -48, 270, 4000, {.forwards = false, .minSpeed = 127});
+    chassis.moveToPose(46, -48, 270, 3000, {.forwards = false, .earlyExitRange = 2});
+    spinChoice("up");
     //chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
     //spinIntake();
 
