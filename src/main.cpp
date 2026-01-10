@@ -49,7 +49,7 @@ pros::Optical opticalSensor(2);// ================
 // SENSORS (used for odom/drivetrain)
 // ================
 pros::Imu imu(12);                    // IMU
-pros::Rotation verticalEnc(-11);  // Rotation sensor on port 8, reversed
+pros::Rotation verticalEnc(11);  // Rotation sensor on port 8, reversed
 // pros::Rotation horizontalEnc(3);  // Rotation sensor on port 9, reversed
 // Tracking wheel object (Vertical). 2" wheel, 0" offset (update if measured differently).
 lemlib::TrackingWheel vertical(&verticalEnc, lemlib::Omniwheel::NEW_2, 0);
@@ -137,8 +137,8 @@ void initialize() {
     pros::lcd::initialize(); // initialize brain screen
 
     chassis.calibrate();     // calibrate sensors
-    imu.set_heading(270);
-
+    imu.tare_heading();   
+    chassis.setPose(0, 0, 0);
     // optional but recommended: turn on optical LED
     opticalSensor.set_led_pwm(100);
 
@@ -330,7 +330,7 @@ void autonomous() {
     spinChoice("up");
     //pros::delay(300);
     //spinChoice("stop");
-    chassis.moveToPose(24, 48, 315,2500,{.minSpeed = 90});
+    chassis.moveToPose(24, 48, 315,2500,{.minSpeed = 127});
     stopIntake();
     Grabber.extend();
     spinChoice("stop");
@@ -339,35 +339,35 @@ void autonomous() {
     //chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
     //pros::delay(500);
     spinIntake();
-    chassis.moveToPose(4, chassis.getPose().y, 270, 2500);
-    //pros::delay(1000);
+    chassis.moveToPose(14, 46, 270, 500,{.minSpeed = 127, .earlyExitRange = 2});
+    chassis.moveToPose(4, 46, 270, 3400, {.minSpeed = 100}, false);
+    //spinChoice("stop");
+    pros::delay(500);
     //pros::delay(1000);
     //chassis.moveToPose(46, 49, 270,3500., {.forwards = false, .minSpeed = 127, .earlyExitRange = 2});
-    chassis.moveToPose(46, 48, 270, 2000, {.forwards = false, .earlyExitRange = 2});
-    chassis.waitUntil(30);
+    chassis.moveToPose(48, 46, 270, 900, {.forwards = false, .minSpeed=127, .earlyExitRange = 2});
+    chassis.waitUntil(36);
     spinChoice("up");
     chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
-    pros::delay(1000);
+    pros::delay(2000);
     stopIntake();
     spinChoice("stop");
-    /*
     chassis.moveToPoint(34, 48, 2000, {.minSpeed = 80, .earlyExitRange = 2});
     chassis.swingToHeading(180, DriveSide::LEFT, 1000, {.minSpeed = 110, .earlyExitRange = 1});
     chassis.moveToPose(30, -48, 180, 4500,{.minSpeed = 110, .earlyExitRange = 3});
     //chassis.setPose(72-getForward(),getRight()-72,chassis.getPose().theta);
     chassis.moveToPose(24, -48, 270, 4000);
-    pros::delay(800);
-    chassis.setPose(chassis.getPose().x, getLeft() - 72, chassis.getPose().theta);
-    pros::delay(800);
+    //pros::delay(800);
+    //chassis.setPose(chassis.getPose().x, getLeft() - 72, chassis.getPose().theta);
+    //pros::delay(800);
     spinIntake();
-    chassis.moveToPose(8, -48, 270, 2000,{.earlyExitRange = 2});
+    chassis.moveToPoint(4, -52, 1500, {.minSpeed = 100});
     pros::delay(1000);
-    chassis.moveToPose(46, -48, 270, 2000, {.forwards = false, .earlyExitRange = 2});
-    chassis.waitUntil(30);
+    chassis.moveToPose(46, -52, 270, 1200, {.forwards = false, .earlyExitRange = 2});
+    chassis.waitUntil(48);
     spinChoice("up");
     //chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
     //spinIntake();
-    */
     // moveToPose()
     /*
     chassis.moveToPose(36,chassis.getPose().y,chassis.getPose().theta,1500, {.minSpeed = 60, .earlyExitRange = 6});
@@ -446,8 +446,15 @@ void autonomous() {
 // === Driver control ===
 void opcontrol() {
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST);
-    int descore = 1;
-    bool descoreOut = false;
+
+    // Toggle states
+    bool grabberExtended = false;
+    bool descorerExtended = false;
+
+    // Edge-detect latches
+    bool lastB = false;
+    bool lastY = false;
+
     while (true) {
         // === DRIVE ===
         int leftY  = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
@@ -478,10 +485,10 @@ void opcontrol() {
 
         if (L2) {
             choice.move_velocity(inverse * -600);
-            intakeCmd = -600;     // run intake while using choice
+            intakeCmd = -600; // run intake while using choice
         } else if (L1) {
             choice.move_velocity(inverse * 600);
-            intakeCmd = -600;     // same here
+            intakeCmd = -600; // same here
         } else {
             choice.move_velocity(0);
         }
@@ -501,31 +508,22 @@ void opcontrol() {
         intake1.move_velocity(intakeCmd);
         intake2.move_velocity(intakeCmd);
 
-        // === PNEUMATICS ===
-        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_UP)) {
-            Grabber.retract();
-        } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN)) {
-            Grabber.extend();
+        // === PNEUMATICS TOGGLES ===
+        bool bNow = controller.get_digital(pros::E_CONTROLLER_DIGITAL_B); // Grabber toggle
+        if (bNow && !lastB) {
+            grabberExtended = !grabberExtended;
+            if (grabberExtended) Grabber.extend();
+            else Grabber.retract();
         }
-        
-        bool rightNow = controller.get_digital(pros::E_CONTROLLER_DIGITAL_RIGHT);
+        lastB = bNow;
 
-        if (rightNow && !descoreOut) {
-            // Toggle pneumatic
-            if (descore == 1) {
-                Descorer.extend();
-                descore = -1;
-            } else {
-                Descorer.retract();
-                descore = 1;
-            }
-
-            descoreOut = true;  // mark that the button was handled
+        bool yNow = controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y); // Descorer toggle
+        if (yNow && !lastY) {
+            descorerExtended = !descorerExtended;
+            if (descorerExtended) Descorer.extend();
+            else Descorer.retract();
         }
-
-        if (!rightNow) {
-            descoreOut = false;  // reset when button released
-        }
+        lastY = yNow;
 
         pros::delay(10);
     }
