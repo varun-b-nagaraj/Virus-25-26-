@@ -477,18 +477,13 @@ void opcontrol() {
 
         chassis.arcade(leftY, rightX);
 
-        // === CHOICE + COLOR LOGIC ===
-        bool blueDetect = opticalSensor.get_hue() > 160 && opticalSensor.get_hue() < 260;
-        int inverse = blueDetect ? -1 : 1;
-
+        // === CHOICE (NO COLOR SORTER) ===
+        // L1 or L2 spins choice "up" only
         int intakeCmd = 0; // final intake command for this loop
 
-        if (L2) {
-            choice.move_velocity(inverse * -600);
-            intakeCmd = -600; // run intake while using choice
-        } else if (L1) {
-            choice.move_velocity(inverse * 600);
-            intakeCmd = -600; // same here
+        if (L1 || L2) {
+            choice.move_velocity(600); // always "up"
+            intakeCmd = -600;          // optional: keep intake running while choice runs (matches your old behavior)
         } else {
             choice.move_velocity(0);
         }
@@ -528,3 +523,4 @@ void opcontrol() {
         pros::delay(10);
     }
 }
+
