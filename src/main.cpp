@@ -32,7 +32,7 @@ pros::MotorGroup rightMotors({9, 8},
 pros::Motor intake1(-20, pros::MotorGears::blue);
 pros::Motor intake2(-15, pros::MotorGears::blue);
 
-pros::Motor choice(6, pros::MotorGears::blue);
+pros::Motor choice(10, pros::MotorGears::blue);
 
 // =====================
 // UNUSED SUBSYSTEMS (commented out but kept for reference)
@@ -41,14 +41,14 @@ pros::Motor choice(6, pros::MotorGears::blue);
 // pros::Motor highStake(7, pros::MotorGears::red);
 // pros::Motor leftArm(20, pros::MotorGears::green);
 pros::Distance leftSensor(4); //redid
-pros::Distance rightSensor(1);
+pros::Distance rightSensor(3);
 pros::Distance forwardSensor(14);
 pros::Distance backSensor(5);
 
 pros::Optical opticalSensor(2);// ================
 // SENSORS (used for odom/drivetrain)
 // ================
-pros::Imu imu(12);                    // IMU
+pros::Imu imu(13);                    // IMU
 pros::Rotation verticalEnc(11);  // Rotation sensor on port 8, reversed
 // pros::Rotation horizontalEnc(3);  // Rotation sensor on port 9, reversed
 // Tracking wheel object (Vertical). 2" wheel, 0" offset (update if measured differently).
@@ -138,7 +138,7 @@ void initialize() {
 
     chassis.calibrate();     // calibrate sensors
     imu.tare_heading();   
-    chassis.setPose(0, 0, 0);
+    chassis.setPose(0, 0, 90);
     // optional but recommended: turn on optical LED
     opticalSensor.set_led_pwm(100);
 
@@ -150,13 +150,13 @@ void initialize() {
             pros::lcd::print(2, "Theta: %.2f", chassis.getPose().theta);
 
             // optical
-            pros::lcd::print(3, "Hue: %d", (int)opticalSensor.get_hue());
+            //pros::lcd::print(3, "Hue: %d", (int)opticalSensor.get_hue());
 
             // distance sensors (mm, ints)
-            pros::lcd::print(4, "Dist L: %d", (int)leftSensor.get());
-            pros::lcd::print(5, "Dist R: %d", (int)rightSensor.get());
-            pros::lcd::print(6, "Dist F: %d", (int)forwardSensor.get());
-            pros::lcd::print(7, "Dist B: %d", (int)backSensor.get());
+            //pros::lcd::print(4, "Dist L: %d", (int)leftSensor.get());
+            //pros::lcd::print(5, "Dist R: %d", (int)rightSensor.get());
+            //pros::lcd::print(6, "Dist F: %d", (int)forwardSensor.get());
+            //pros::lcd::print(7, "Dist B: %d", (int)backSensor.get());
 
             lemlib::telemetrySink()->info("Chassis pose: {}", chassis.getPose());
             pros::delay(50);
@@ -201,6 +201,11 @@ void spinIntake() {
 void stopIntake() {
     intake1.move_velocity(0);
     intake2.move_velocity(0);
+}
+
+void spinIntakeReverse() {
+    intake1.move_velocity(600);
+    intake2.move_velocity(600);
 }
 
 // Spin intake reverse for a duration (ms)
@@ -262,7 +267,7 @@ double getForward(double offset = 3) {
 }
 
 // === BACK SENSOR ===
-double getBack(double offset = 2.3) {
+double getBack(double offset = 6) {
     return (mmToInches(backSensor.get()) + offset);
 }
 
@@ -311,22 +316,24 @@ void autonomous() {
 // compute Y from left distance sensor (mm → inches + sensor→center offset
 
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
-    double fieldX = mmToInches(leftSensor.get()) + 4.5;
+    chassis.setPose(getBack(), 72-getLeft(), chassis.getPose().theta);
+
+    //double fieldX = mmToInches(leftSensor.get()) + 4.5;
 
     // grab whatever heading the IMU/odom thinks we have (should be ~270)
-    double theta = chassis.getPose().theta;
+    //double theta = chassis.getPose().theta;
 
     // set pose with the measured X/Y, keep heading consistent with IMU
-    chassis.setPose(fieldX, 16, theta);
+    //chassis.setPose(fieldX, 16, theta);
 
     //chassis.moveToPose(chassis.getPose().x,16,chassis.getPose().theta,1000,{.minSpeed = 127});
 
-    chassis.moveToPose(50, 22, 90,1200, {.minSpeed = 100, .earlyExitRange = 6});
+    chassis.moveToPose(52, 22, 90,1200, {.minSpeed = 70, .earlyExitRange = 6});
     spinIntake();
     //pros::delay(100);
     chassis.turnToHeading(315, 500);
-    chassis.moveToPose(60, 12, 315,1400, {.forwards = false, .maxSpeed = 115}); // change x to 58 next time.
-    chassis.waitUntil(2.3);
+    chassis.moveToPose(60, 12, 315,1400, {.forwards = false}); // change x to 58 next time.
+    chassis.waitUntil(3);
     spinChoice("up");
     //pros::delay(300);
     //spinChoice("stop");
@@ -339,22 +346,24 @@ void autonomous() {
     //chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
     //pros::delay(500);
     spinIntake();
-    chassis.moveToPose(14, 46, 270, 500,{.minSpeed = 127, .earlyExitRange = 2});
-    chassis.moveToPose(6, 46, 270, 700, {.minSpeed = 100}, false);
-    chassis.moveToPose(0, 46, 270, 700, {.maxSpeed = 20}, false);
+    chassis.moveToPose(14, 48, 270, 500,{.minSpeed = 127, .earlyExitRange = 2});
+    chassis.moveToPose(6, 48, 270, 700, {.minSpeed = 100}, false);
+    chassis.moveToPose(0, 48, 270, 700, {.maxSpeed = 20}, false);
     //spinChoice("stop");
     //pros::delay(650);
     //pros::delay(1000);
     //chassis.moveToPose(46, 49, 270,3500., {.forwards = false, .minSpeed = 127, .earlyExitRange = 2});
-    chassis.moveToPose(48, 46, 270, 900, {.forwards = false, .minSpeed=127, .earlyExitRange = 2});
+    chassis.moveToPose(48, 48, 270, 900, {.forwards = false, .minSpeed=127, .earlyExitRange = 2});
     chassis.waitUntil(36);
     spinChoice("up");
     chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
     pros::delay(1750);
     stopIntake();
     spinChoice("stop");
-    chassis.moveToPoint(34, 48, 2000, {.minSpeed = 80, .earlyExitRange = 2});
-    chassis.swingToHeading(180, DriveSide::LEFT, 1000, {.minSpeed = 110, .earlyExitRange = 1});
+    chassis.moveToPose(3, 48, 270, 2000, {.minSpeed = 127, .earlyExitRange = 2});
+    //chassis.moveToPose(34, 48, 270, 2000, {.minSpeed = 127, .earlyExitRange = 2});
+    //chassis.swingToHeading(180, DriveSide::LEFT, 1000, {.minSpeed = 110, .earlyExitRange = 1});
+    /*
     chassis.moveToPose(30, -48, 180, 4500,{.minSpeed = 110, .earlyExitRange = 3});
     //chassis.setPose(72-getForward(),getRight()-72,chassis.getPose().theta);
     chassis.moveToPose(24, -48, 270, 600);
