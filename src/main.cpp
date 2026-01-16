@@ -48,7 +48,7 @@ pros::Distance backSensor(5);
 pros::Optical opticalSensor(2);// ================
 // SENSORS (used for odom/drivetrain)
 // ================
-pros::Imu imu(12);                    // IMU
+pros::Imu imu(13);                    // IMU
 pros::Rotation verticalEnc(11);  // Rotation sensor on port 8, reversed
 // pros::Rotation horizontalEnc(3);  // Rotation sensor on port 9, reversed
 // Tracking wheel object (Vertical). 2" wheel, 0" offset (update if measured differently).
@@ -138,7 +138,7 @@ void initialize() {
 
     chassis.calibrate();     // calibrate sensors
     imu.tare_heading();   
-    chassis.setPose(0, 0, 0);
+    chassis.setPose(0, 0, 90);
     // optional but recommended: turn on optical LED
     opticalSensor.set_led_pwm(100);
 
@@ -150,13 +150,13 @@ void initialize() {
             pros::lcd::print(2, "Theta: %.2f", chassis.getPose().theta);
 
             // optical
-            pros::lcd::print(3, "Hue: %d", (int)opticalSensor.get_hue());
+            //pros::lcd::print(3, "Hue: %d", (int)opticalSensor.get_hue());
 
             // distance sensors (mm, ints)
-            pros::lcd::print(4, "Dist L: %d", (int)leftSensor.get());
-            pros::lcd::print(5, "Dist R: %d", (int)rightSensor.get());
-            pros::lcd::print(6, "Dist F: %d", (int)forwardSensor.get());
-            pros::lcd::print(7, "Dist B: %d", (int)backSensor.get());
+            //pros::lcd::print(4, "Dist L: %d", (int)leftSensor.get());
+            //pros::lcd::print(5, "Dist R: %d", (int)rightSensor.get());
+            //pros::lcd::print(6, "Dist F: %d", (int)forwardSensor.get());
+            //pros::lcd::print(7, "Dist B: %d", (int)backSensor.get());
 
             lemlib::telemetrySink()->info("Chassis pose: {}", chassis.getPose());
             pros::delay(50);
@@ -201,6 +201,11 @@ void spinIntake() {
 void stopIntake() {
     intake1.move_velocity(0);
     intake2.move_velocity(0);
+}
+
+void spinIntakeReverse() {
+    intake1.move_velocity(600);
+    intake2.move_velocity(600);
 }
 
 // Spin intake reverse for a duration (ms)
@@ -262,7 +267,7 @@ double getForward(double offset = 3) {
 }
 
 // === BACK SENSOR ===
-double getBack(double offset = 2.3) {
+double getBack(double offset = 6) {
     return (mmToInches(backSensor.get()) + offset);
 }
 
@@ -311,29 +316,33 @@ void autonomous() {
 // compute Y from left distance sensor (mm → inches + sensor→center offset
 
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
-    double fieldX = mmToInches(leftSensor.get()) + 4.5;
+    chassis.setPose(getBack(), 72-getLeft(), chassis.getPose().theta);
+
+    //double fieldX = mmToInches(leftSensor.get()) + 4.5;
 
     // grab whatever heading the IMU/odom thinks we have (should be ~270)
-    double theta = chassis.getPose().theta;
+    //double theta = chassis.getPose().theta;
 
     // set pose with the measured X/Y, keep heading consistent with IMU
-    chassis.setPose(fieldX, 16, theta);
+    //chassis.setPose(fieldX, 16, theta);
 
     //chassis.moveToPose(chassis.getPose().x,16,chassis.getPose().theta,1000,{.minSpeed = 127});
 
-    chassis.moveToPose(50, 22, 90,1200, {.minSpeed = 100, .earlyExitRange = 6});
+    chassis.moveToPose(52, 22, 90,1200, {.minSpeed = 70, .earlyExitRange = 6});
     spinIntake();
     //pros::delay(100);
     chassis.turnToHeading(315, 500);
-    chassis.moveToPose(60, 12, 315,1400, {.forwards = false, .maxSpeed = 115}); // change x to 58 next time.
-    chassis.waitUntil(2.3);
+    chassis.moveToPose(60, 12, 315,1400, {.forwards = false}); // change x to 58 next time.
+    chassis.waitUntil(2.5);
     spinChoice("up");
+    chassis.waitUntil(7);
+    spinChoice("stop");
+
     //pros::delay(300);
     //spinChoice("stop");
     chassis.moveToPose(24, 48, 315,2500,{.minSpeed = 127});
     stopIntake();
     Grabber.extend();
-    spinChoice("stop");
     chassis.turnToHeading(270, 350);
     //pros::delay(500);
     //chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
@@ -341,29 +350,37 @@ void autonomous() {
     spinIntake();
     chassis.moveToPose(14, 46, 270, 500,{.minSpeed = 127, .earlyExitRange = 2});
     chassis.moveToPose(6, 46, 270, 700, {.minSpeed = 100}, false);
-    chassis.moveToPose(0, 46, 270, 700, {.maxSpeed = 20}, false);
+    chassis.moveToPose(0, 46, 270, 700, {.maxSpeed = 25}, false);
     //spinChoice("stop");
     //pros::delay(650);
     //pros::delay(1000);
     //chassis.moveToPose(46, 49, 270,3500., {.forwards = false, .minSpeed = 127, .earlyExitRange = 2});
-    chassis.moveToPose(48, 46, 270, 900, {.forwards = false, .minSpeed=127, .earlyExitRange = 2});
+    chassis.moveToPose(48, 46, 270, 900, {.forwards = false, .minSpeed=127});
     chassis.waitUntil(36);
     spinChoice("up");
     chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
-    pros::delay(1750);
+    pros::delay(1950);
     stopIntake();
     spinChoice("stop");
-    chassis.moveToPoint(34, 48, 2000, {.minSpeed = 80, .earlyExitRange = 2});
+    Grabber.retract();
+    chassis.moveToPoint(42, 48, 2000, {.minSpeed = 80, .earlyExitRange = 2});
     chassis.swingToHeading(180, DriveSide::LEFT, 1000, {.minSpeed = 110, .earlyExitRange = 1});
-    chassis.moveToPose(30, -48, 180, 4500,{.minSpeed = 110, .earlyExitRange = 3});
+    spinIntake();
+    chassis.moveToPose(56, -24, 180, 4500,{.minSpeed = 127, .earlyExitRange = 3});
+    chassis.turnToHeading(45,400);
+    pros::delay(850);
+    stopIntake();
+    chassis.moveToPose(64, -14, 45,1400, { .maxSpeed = 115}, false); // change x to 58 next time.
+    spinIntakeReverse();
     //chassis.setPose(72-getForward(),getRight()-72,chassis.getPose().theta);
+    /*
     chassis.moveToPose(24, -48, 270, 600);
     //pros::delay(800);
     //chassis.setPose(chassis.getPose().x, getLeft() - 72, chassis.getPose().theta);
     //pros::delay(800);
     spinIntake();
     chassis.moveToPose(6, -52, 270, 600, {.minSpeed = 100}, false);
-    chassis.moveToPose(0, -52, 270, 300, {.maxSpeed = 20}, false);
+    chassis.moveToPose(0, -52, 270, 400, {.maxSpeed = 23}, false);
     //pros::delay(1000);
     chassis.moveToPose(46, -52, 270, 1200, {.forwards = false, .minSpeed = 127});
     chassis.waitUntil(36);
