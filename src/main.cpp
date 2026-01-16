@@ -262,7 +262,7 @@ double getRight(double offset = 4.5) {
 }
 
 // === FORWARD SENSOR ===
-double getForward(double offset = 3) {
+double getForward(double offset = 4.5) {
     return mmToInches(forwardSensor.get()) + offset;
 }
 
@@ -327,43 +327,45 @@ void autonomous() {
     //chassis.setPose(fieldX, 16, theta);
 
     //chassis.moveToPose(chassis.getPose().x,16,chassis.getPose().theta,1000,{.minSpeed = 127});
-
-    chassis.moveToPose(52, 22, 90,1200, {.minSpeed = 70, .earlyExitRange = 6});
+    chassis.moveToPose(52, 22, 90,900, {.minSpeed = 127, .earlyExitRange = 6});
     spinIntake();
+    chassis.moveToPoint(52, 24,250, {.maxSpeed = 60});
     //pros::delay(100);
     chassis.turnToHeading(315, 500);
-    chassis.moveToPose(60, 12, 315,1400, {.forwards = false}); // change x to 58 next time.
-    chassis.waitUntil(3);
+    chassis.moveToPose(60, 12, 315,1200, {.forwards = false}); // change x to 58 next time.
+    chassis.waitUntil(3.5);
     spinChoice("up");
     //pros::delay(300);
     //spinChoice("stop");
-    chassis.moveToPose(24, 48, 315,2500,{.minSpeed = 127});
+    chassis.moveToPose(24, 46, 315,2500,{.minSpeed = 127});
     stopIntake();
     Grabber.extend();
     spinChoice("stop");
-    chassis.turnToHeading(270, 350);
+    chassis.turnToHeading(270, 275);
     //pros::delay(500);
     //chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
     //pros::delay(500);
     spinIntake();
-    chassis.moveToPose(14, 48, 270, 500,{.minSpeed = 127, .earlyExitRange = 2});
-    chassis.moveToPose(6, 48, 270, 700, {.minSpeed = 100}, false);
-    chassis.moveToPose(0, 48, 270, 700, {.maxSpeed = 20}, false);
+   // chassis.moveToPoint(24, 46, 400,{.minSpeed = 127, .earlyExitRange = 2});
+    chassis.turnToHeading(270, 300, {.minSpeed = 127, .earlyExitRange = 1});
+    /*
+    chassis.moveToPose(7, 46, 270, 700, {.minSpeed = 100}, false);
+    chassis.moveToPose(0, 46, 270, 600, {.maxSpeed = 20}, false);
     //spinChoice("stop");
     //pros::delay(650);
     //pros::delay(1000);
     //chassis.moveToPose(46, 49, 270,3500., {.forwards = false, .minSpeed = 127, .earlyExitRange = 2});
-    chassis.moveToPose(48, 48, 270, 900, {.forwards = false, .minSpeed=127, .earlyExitRange = 2});
+    chassis.moveToPose(48, 46, 270, 900, {.forwards = false, .minSpeed=127, .earlyExitRange = 2});
     chassis.waitUntil(36);
+    spinIntake();
     spinChoice("up");
-    chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
-    pros::delay(1750);
+    chassis.setPose(getForward(),72-getRight(),chassis.getPose().theta);
+    pros::delay(2000);
     stopIntake();
     spinChoice("stop");
-    chassis.moveToPose(3, 48, 270, 2000, {.minSpeed = 127, .earlyExitRange = 2});
-    //chassis.moveToPose(34, 48, 270, 2000, {.minSpeed = 127, .earlyExitRange = 2});
-    //chassis.swingToHeading(180, DriveSide::LEFT, 1000, {.minSpeed = 110, .earlyExitRange = 1});
     /*
+    chassis.moveToPoint(32, chassis.getPose().y, 600, {.minSpeed = 100});
+    chassis.turnToHeading(180, 300, {.minSpeed = 127, .earlyExitRange = 1});
     chassis.moveToPose(30, -48, 180, 4500,{.minSpeed = 110, .earlyExitRange = 3});
     //chassis.setPose(72-getForward(),getRight()-72,chassis.getPose().theta);
     chassis.moveToPose(24, -48, 270, 600);
@@ -371,8 +373,8 @@ void autonomous() {
     //chassis.setPose(chassis.getPose().x, getLeft() - 72, chassis.getPose().theta);
     //pros::delay(800);
     spinIntake();
-    chassis.moveToPose(6, -52, 270, 600, {.minSpeed = 100}, false);
-    chassis.moveToPose(0, -52, 270, 300, {.maxSpeed = 20}, false);
+    chassis.moveToPose(0, -52, 270, 600, {.minSpeed = 100}, false);
+    chassis.moveToPose(0, -52, 270, 650, {.maxSpeed = 23}, false);
     //pros::delay(1000);
     chassis.moveToPose(46, -52, 270, 1200, {.forwards = false, .minSpeed = 127});
     chassis.waitUntil(36);
