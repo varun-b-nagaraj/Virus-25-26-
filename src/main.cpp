@@ -123,7 +123,7 @@ lemlib::Chassis chassis(drivetrain,        // drivetrain settings
                        sensors);          // odometry sensors
 
 
-pros::adi::Pneumatics MogoMech('e', false); // Pneumatics on port E
+pros::adi::Pneumatics Middle('e', true); // Pneumatics on port E
 pros::adi::Pneumatics Descorer('a', false); // Pneumatics on port E
 pros::adi::Pneumatics Grabber('c', false); // Pneumatics on port E
 
@@ -463,10 +463,12 @@ void opcontrol() {
     // Toggle states
     bool grabberExtended = false;
     bool descorerExtended = false;
+    bool middleExtended = true;   // starts extended (you said you're handling the actual extend elsewhere)
 
     // Edge-detect latches
     bool lastB = false;
     bool lastY = false;
+    bool lastX = false;
 
     while (true) {
         // === DRIVE ===
@@ -496,7 +498,7 @@ void opcontrol() {
 
         if (L1 || L2) {
             choice.move_velocity(600); // always "up"
-            intakeCmd = -600;          // optional: keep intake running while choice runs (matches your old behavior)
+            intakeCmd = -600;          // optional: keep intake running while choice runs
         } else {
             choice.move_velocity(0);
         }
@@ -517,7 +519,8 @@ void opcontrol() {
         intake2.move_velocity(intakeCmd);
 
         // === PNEUMATICS TOGGLES ===
-        bool bNow = controller.get_digital(pros::E_CONTROLLER_DIGITAL_B); // Grabber toggle
+        // Grabber toggle (B)
+        bool bNow = controller.get_digital(pros::E_CONTROLLER_DIGITAL_B);
         if (bNow && !lastB) {
             grabberExtended = !grabberExtended;
             if (grabberExtended) Grabber.extend();
@@ -525,7 +528,8 @@ void opcontrol() {
         }
         lastB = bNow;
 
-        bool yNow = controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y); // Descorer toggle
+        // Descorer toggle (Y)
+        bool yNow = controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y);
         if (yNow && !lastY) {
             descorerExtended = !descorerExtended;
             if (descorerExtended) Descorer.extend();
@@ -533,7 +537,15 @@ void opcontrol() {
         }
         lastY = yNow;
 
+        // Middle goal toggle (X)
+        bool xNow = controller.get_digital(pros::E_CONTROLLER_DIGITAL_X);
+        if (xNow && !lastX) {
+            middleExtended = !middleExtended;
+            if (middleExtended) Middle.extend();
+            else Middle.retract();
+        }
+        lastX = xNow;
+
         pros::delay(10);
     }
 }
-
