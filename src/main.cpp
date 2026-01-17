@@ -334,8 +334,8 @@ void autonomous() {
     chassis.moveToPoint(52, 24,250, {.maxSpeed = 100});    
     //pros::delay(100);
     chassis.turnToHeading(315, 500);
-    chassis.moveToPose(60, 12, 315,1200, {.forwards = false}); // change x to 58 next time.
-    chassis.waitUntil(3.5);
+    chassis.moveToPose(60, 12, 315,1100, {.forwards = false}); // change x to 58 next time.
+    chassis.waitUntil(4);
     spinChoice("up");
     //pros::delay(300);
     //spinChoice("stop");
@@ -367,16 +367,22 @@ void autonomous() {
     chassis.moveToPoint(32, chassis.getPose().y, 600, {.minSpeed = 100});
     chassis.turnToHeading(180, 300, {.minSpeed = 127, .earlyExitRange = 1});
     chassis.moveToPose(30, -48, 180, 4500,{.minSpeed = 110, .earlyExitRange = 3});
+
+    // Code fix 1:
+
+    //chassis.moveToPoint(48, -24, 4300, {.minSpeed = 110, .earlyExitRange = 3});
+    //chassis.turnToPoint(24, -48, 1000, {.minSpeed = 100, .earlyExitRange = 2});
+
     //chassis.setPose(72-getForward(),getRight()-72,chassis.getPose().theta);
     chassis.moveToPose(24, -48, 270, 600);
     //pros::delay(800);
     //chassis.setPose(chassis.getPose().x, getLeft() - 72, chassis.getPose().theta);
     //pros::delay(800);
     spinIntake();
-    chassis.moveToPose(0, -55, 270, 600, {.minSpeed = 100}, false);
-    chassis.moveToPose(0, -55, 270, 650, {.maxSpeed = 23}, false);
+    chassis.moveToPose(-4, -54, 270, 600, {.minSpeed = 100}, false);
+    chassis.moveToPose(0, -54, 270, 650, {.maxSpeed = 23}, false);
     //pros::delay(1000);
-    chassis.moveToPose(46, -55, 270, 1200, {.forwards = false, .minSpeed = 127});
+    chassis.moveToPose(46, -54, 270, 1200, {.forwards = false, .minSpeed = 127});
     chassis.waitUntil(36);
     spinChoice("up");
     //chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
@@ -545,6 +551,15 @@ void opcontrol() {
             else Middle.retract();
         }
         lastX = xNow;
+
+        // === CONTROLLER DISPLAY (no flicker) ===
+        static bool lastMiddleState = !middleExtended; // force first print
+
+        if (middleExtended != lastMiddleState) {
+            controller.print(0, 0, "Middle: %s   ",
+                middleExtended ? "EXT" : "RET");
+            lastMiddleState = middleExtended;
+        }
 
         pros::delay(10);
     }
