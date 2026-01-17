@@ -557,7 +557,7 @@ void opcontrol() {
 
         if (middleExtended != lastMiddleState) {
             controller.print(0, 0, "Middle: %s   ",
-                middleExtended ? "EXT" : "RET");
+                middleExtended ? "DOWN" : "UP");
             lastMiddleState = middleExtended;
         }
 
