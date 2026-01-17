@@ -123,7 +123,7 @@ lemlib::Chassis chassis(drivetrain,        // drivetrain settings
                        sensors);          // odometry sensors
 
 
-pros::adi::Pneumatics Middle('e', true); // Pneumatics on port E
+pros::adi::Pneumatics Middle('e', false); // Pneumatics on port E
 pros::adi::Pneumatics Descorer('a', false); // Pneumatics on port E
 pros::adi::Pneumatics Grabber('c', false); // Pneumatics on port E
 
