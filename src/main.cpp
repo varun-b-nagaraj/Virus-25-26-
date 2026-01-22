@@ -32,7 +32,7 @@ pros::MotorGroup rightMotors({9, 8},
 pros::Motor intake1(-20, pros::MotorGears::blue);
 pros::Motor intake2(-15, pros::MotorGears::blue);
 
-pros::Motor choice(10, pros::MotorGears::blue);
+pros::Motor choice(19, pros::MotorGears::blue);
 
 // =====================
 // UNUSED SUBSYSTEMS (commented out but kept for reference)
@@ -308,6 +308,68 @@ int slewRateLimit(int current, int target, int maxChange) {
         return current - maxChange;
     }
 }
+void stayInPosition(const std::string& sensor, int holdDurationMS, int toleranceMM = 10) {
+    // Get the initial distance reading as the target
+    int targetDistance = 0;
+    
+    if (sensor == "front") {
+        targetDistance = forwardSensor.get();
+    } else if (sensor == "left") {
+        targetDistance = leftSensor.get();
+    } else if (sensor == "right") {
+        targetDistance = rightSensor.get();
+    } else if (sensor == "back") {
+        targetDistance = backSensor.get();
+    } else {
+        return; // invalid sensor
+    }
+    
+    int elapsedTime = 0;
+    int loopDelay = 20; // ms between checks
+    int driveSpeed = 60; // speed for corrective movements (0-127)
+    
+    while (elapsedTime < holdDurationMS) {
+        int currentDistance = 0;
+        
+        // Read current distance from the specified sensor
+        if (sensor == "front") {
+            currentDistance = forwardSensor.get();
+        } else if (sensor == "left") {
+            currentDistance = leftSensor.get();
+        } else if (sensor == "right") {
+            currentDistance = rightSensor.get();
+        } else if (sensor == "back") {
+            currentDistance = backSensor.get();
+        }
+        
+        // Calculate difference from target
+        int difference = currentDistance - targetDistance;
+        
+        if (std::abs(difference) > toleranceMM) {
+            // Out of tolerance, make a correction
+            if (difference > 0) {
+                // Distance increased (moving away), drive forward to close gap
+                leftMotors.move_velocity(driveSpeed);
+                rightMotors.move_velocity(driveSpeed);
+            } else {
+                // Distance decreased (moving closer), drive backward to increase distance
+                leftMotors.move_velocity(-driveSpeed);
+                rightMotors.move_velocity(-driveSpeed);
+            }
+        } else {
+            // Within tolerance, stop moving
+            leftMotors.move_velocity(0);
+            rightMotors.move_velocity(0);
+        }
+        
+        pros::delay(loopDelay);
+        elapsedTime += loopDelay;
+    }
+    
+    // Stop motors when done
+    leftMotors.move_velocity(0);
+    rightMotors.move_velocity(0);
+}
 
 // === Autonomous ===
 void autonomous() {
@@ -316,151 +378,68 @@ void autonomous() {
 // compute Y from left distance sensor (mm → inches + sensor→center offset
 
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
-    chassis.setPose(getBack(), 72-getLeft(), chassis.getPose().theta);
+    chassis.setPose(getRight(), getForward() - 72, 0);
 
-    //double fieldX = mmToInches(leftSensor.get()) + 4.5;
-
-    // grab whatever heading the IMU/odom thinks we have (should be ~270)
-    //double theta = chassis.getPose().theta;
-
-    // set pose with the measured X/Y, keep heading consistent with IMU
-    //chassis.setPose(fieldX, 16, theta);
-
-    //chassis.moveToPose(chassis.getPose().x,16,chassis.getPose().theta,1000,{.minSpeed = 127});
-    chassis.moveToPose(52, 22, 90,1300, {.minSpeed = 127, .earlyExitRange = 6});
+    // Get block from other team
     spinIntake();
-    chassis.waitUntil(20);
-    Grabber.extend();
-    chassis.moveToPoint(52, 24,250, {.maxSpeed = 100});    
-    //pros::delay(100);
-    chassis.turnToHeading(315, 500);
-    chassis.moveToPose(60, 12, 315,1100, {.forwards = false}); // change x to 58 next time.
-    chassis.waitUntil(4);
-    spinChoice("up");
-    //pros::delay(300);
-    //spinChoice("stop");
-    chassis.moveToPose(24, 46, 315,2500,{.minSpeed = 127});
-    stopIntake();
-    spinChoice("stop");
-    chassis.turnToHeading(270, 275);
-    //pros::delay(500);
-    //chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
-    //pros::delay(500);
-    spinIntake();
-   // chassis.moveToPoint(24, 46, 400,{.minSpeed = 127, .earlyExitRange = 2});
-    chassis.turnToHeading(270, 300, {.minSpeed = 127, .earlyExitRange = 1});
-    chassis.moveToPose(7, 46, 270, 700, {.minSpeed = 100}, false);
-    chassis.moveToPose(0, 46, 270, 600, {.maxSpeed = 20}, false);
-    //spinChoice("stop");
-    //pros::delay(650);
-    //pros::delay(1000);
-    //chassis.moveToPose(46, 49, 270,3500., {.forwards = false, .minSpeed = 127, .earlyExitRange = 2});
-    chassis.moveToPose(48, 46, 270, 900, {.forwards = false, .minSpeed=127, .earlyExitRange = 2});
-    chassis.waitUntil(36);
-    spinIntake();
-    spinChoice("up");
-    pros::delay(1000);
-    //chassis.setPose(getForward(),72-getRight(),chassis.getPose().theta);
-    pros::delay(1000);
-    stopIntake();
-    spinChoice("stop");
-    chassis.moveToPoint(32, chassis.getPose().y, 600, {.minSpeed = 100});
-    chassis.turnToHeading(180, 300, {.minSpeed = 127, .earlyExitRange = 1});
-    chassis.moveToPose(30, -48, 180, 4500,{.minSpeed = 110, .earlyExitRange = 3});
-
-    // Code fix 1:
-
-    //chassis.moveToPoint(48, -24, 4300, {.minSpeed = 110, .earlyExitRange = 3});
-    //chassis.turnToPoint(24, -48, 1000, {.minSpeed = 100, .earlyExitRange = 2});
-
-    //chassis.setPose(72-getForward(),getRight()-72,chassis.getPose().theta);
-    chassis.moveToPose(24, -48, 270, 600);
-    //pros::delay(800);
-    //chassis.setPose(chassis.getPose().x, getLeft() - 72, chassis.getPose().theta);
-    //pros::delay(800);
-    spinIntake();
-    chassis.moveToPose(-4, -54, 270, 600, {.minSpeed = 100}, false);
-    chassis.moveToPose(0, -54, 270, 650, {.maxSpeed = 23}, false);
-    //pros::delay(1000);
-    chassis.moveToPose(46, -54, 270, 1200, {.forwards = false, .minSpeed = 127});
-    chassis.waitUntil(36);
-    spinChoice("up");
-    //chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
-    //spinIntake();
-    // moveToPose()
-    /*
-    chassis.moveToPose(36,chassis.getPose().y,chassis.getPose().theta,1500, {.minSpeed = 60, .earlyExitRange = 6});
-    pros::delay(500);
-    chassis.moveToPose(50,chassis.getPose().y,chassis.getPose().theta,2500, {.maxSpeed = 20});
-    pros::delay(500);
+    chassis.moveToPoint(chassis.getPose().x, 0, 500, {.minSpeed = 80}); 
     
-    // chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
-    pros::delay(500);
-    chassis.turnToHeading(-45,1500);
-    pros::delay(500);
-    chassis.moveToPose(24,50,chassis.getPose().theta,2500, {.maxSpeed = 100}); 
-    chassis.turnToHeading(-92,1500);
-    pros::delay(500);
-    chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
-    chassis.moveToPose(30.5,chassis.getPose().y,chassis.getPose().theta,1500,{.forwards = false, .maxSpeed = 30});
-    //chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
-    // spinIntake(); //spins intake for 2 seconds to make sure ball is in
-    pros::delay(500);                     
-    chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);                                      
-    spinChoice("up",4000); //spins choice motor up for 2 seconds to score in tall goal
-    Grabber.set_value(false); // extend descorer
-    pros::delay(500);
-    chassis.moveToPose(10,48,chassis.getPose().theta,2500);
+    // Align to right goal
+    chassis.moveToPoint(chassis.getPose().x, -48, 1200, {.forwards = false, .minSpeed = 127});
+    chassis.turnToHeading( 270, 700, {.minSpeed = 80});
+
+    // Match load
+    chassis.moveToPose(8, -48, 270, 700, { .minSpeed = 100});
+    stayInPosition("front", 1000);
+
+    // Score in right goal
+    chassis.moveToPose(44, -48, 270, 1000, { .minSpeed = 127}, false);
+    spinChoice("up");
     pros::delay(1500);
-    chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
-    chassis.moveToPose(31,chassis.getPose().y,chassis.getPose().theta,1500,{.forwards = false, .maxSpeed = 50});      
-    */
-    /*
-    chassis.moveToPose(24,48,chassis.getPose().theta,2500); 
-    orrrrrr 
-    { Goes by the line
-    chassis.turnToHeading(270,1500);
-    chassis.moveToPose(24,24,chassis.getPose().theta,2500);
-    chassis.setPose(getFront(),72-getRight(),chassis.getPose().theta);
-    chassis.turnToHeading(0,1500);
-    chassis.moveToPose(24,48,chassis.getPose().theta,2500);
-    }
-    chassis.turnToHeading(270,1500);
-    chassis.setPose(getFront()+(lenght of tall goal thing),72-getRight(),chassis.getPose().theta);
-    grabber.extend();
-    chassis.moveToPose(14,chassis.getPose().y,chassis.getPose().theta,2500,{.maxSpeed = 50});
-    spinIntakeMS(2000); //spins intake for 2 seconds to make sure ball is in
-    spinIntake(); // keeps intake spinning to hold ball in
-    chassis.moveToPose(24,48,chassis.getPose().theta,2500,{.forwards = false}); 
-    grabber.retract();
-    chassis.setPose(getFront()+(lenght of tall goal thing),72-getRight(),chassis.getPose().theta);
-    chassis.moveToPose(37,48,chassis.getPose().theta,1500);
-    chassis.setPose(getFront()+(lenght of tall goal thing),72-getRight(),chassis.getPose().theta);
-    spinChoice("up",2000); //spins choice motor up for 2 seconds to score in tall goal
-    pros::delay(5000);
-    stopIntake(); // stops intake
+    chassis.setPose(getRight() - 72, getForward() , chassis.getPose().theta);
+    spinChoice("stop");
+    stopIntake();
+    chassis.moveToPoint(24, -48, 1000, { .minSpeed = 100});
 
-    */
-
-    //chassis.turnToHeading(-45,2500);
-    //chassis.moveToPose(24,56,chassis.getPose().theta,2500);
-    //chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
-    /*
-    pros::delay(1000); // wait for 1 second before starting autonomous
+    // Pick up the right middle balls
+    chassis.turnToHeading(45, 1200, {.minSpeed = 100});
     spinIntake();
-    chassis.moveToPose(0,27,0,9000, {.maxSpeed = 113}); // Move forward to intake rings
-    chassis.turnToHeading(72.5,5000);
-    pros::delay(10000);
-    chassis.moveToPose(15,29,72.5,14000, {.maxSpeed = 113}); // Move forward to intake rings
-    spinChoice("down", 2000); // Score lower goal
-    */
+    chassis.moveToPoint(48, -24, 2000, { .minSpeed = 100});
+    chassis.waitUntil(35);
+    Grabber.extend();
+    chassis.turnToHeading(0, 500, {.minSpeed = 100}, false);
+
+    // Pick up left middle balls
+    chassis.moveToPoint(52, 24, 1500, { .minSpeed = 100});    
+    chassis.waitUntil(24);
+    Grabber.retract();
+    chassis.waitUntil(26);
+    Grabber.extend();
+
+    // Align & Score for center goal
+    chassis.turnToHeading(315, 1000, {.minSpeed = 100});
+    chassis.moveToPose(61, 11, 315,1100, {.forwards = false});
+    chassis.waitUntil(3);
+    spinChoice("up");
+    Middle.retract();
+    pros::delay(500);
+    spinChoice("stop");
+    stopIntake();
+
+    // Align to left goal
+    chassis.moveToPoint(24, 48, 1200, {.minSpeed = 127, .earlyExitRange = 2});
+    chassis.turnToHeading( 270, 700, {.minSpeed = 80});
+
+    // left match load
+    chassis.moveToPose(8, 48, 270, 700, { .minSpeed = 100});
+    spinIntake();
+    stayInPosition("front", 1000);
+
+    // Score in left goal
+    chassis.moveToPose(44, 48, 270, 1000, { .minSpeed = 127}, false);
+    spinChoice("up");
     }
 
-
-// === Driver control ===
-// Helper Functions
-
-// Scale input with quadratic curve
 
 // === Driver control ===
 void opcontrol() {
