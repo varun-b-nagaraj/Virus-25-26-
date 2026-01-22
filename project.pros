@@ -1,7 +1,7 @@
 {
   "py/object": "pros.conductor.project.Project",
   "py/state": {
-    "project_name": "Red - Virus(25-26)",
+    "project_name": "GameAuto2- Virus(25-26)",
     "target": "v5",
     "templates": {
       "LemLib": {
