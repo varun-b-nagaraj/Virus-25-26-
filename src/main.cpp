@@ -32,7 +32,7 @@ pros::MotorGroup rightMotors({9, 8},
 pros::Motor intake1(-20, pros::MotorGears::blue);
 pros::Motor intake2(-15, pros::MotorGears::blue);
 
-pros::Motor choice(10, pros::MotorGears::blue);
+pros::Motor choice(7, pros::MotorGears::blue);
 
 // =====================
 // UNUSED SUBSYSTEMS (commented out but kept for reference)
@@ -48,8 +48,8 @@ pros::Distance backSensor(5);
 pros::Optical opticalSensor(2);// ================
 // SENSORS (used for odom/drivetrain)
 // ================
-pros::Imu imu(13);                    // IMU
-pros::Rotation verticalEnc(11);  // Rotation sensor on port 8, reversed
+pros::Imu imu(14);                    // IMU
+pros::Rotation verticalEnc(6);  // Rotation sensor on port 8, reversed
 // pros::Rotation horizontalEnc(3);  // Rotation sensor on port 9, reversed
 // Tracking wheel object (Vertical). 2" wheel, 0" offset (update if measured differently).
 lemlib::TrackingWheel vertical(&verticalEnc, lemlib::Omniwheel::NEW_2, 0);
@@ -77,7 +77,7 @@ lemlib::ControllerSettings linearController(13, // proportional gain (kP)
                                               0, // small error range timeout, in milliseconds
                                               3, // large error range, in inches
                                               1000, // large error range timeout, in milliseconds
-                                              20 // maximum acceleration (slew)
+                                              0 // maximum acceleration (slew)
 );
 
 
@@ -138,7 +138,7 @@ void initialize() {
 
     chassis.calibrate();     // calibrate sensors
     imu.tare_heading();   
-    chassis.setPose(0, 0, 90);
+    chassis.setPose(0, 0, 00);
     // optional but recommended: turn on optical LED
     opticalSensor.set_led_pwm(100);
 
@@ -316,144 +316,19 @@ void autonomous() {
 // compute Y from left distance sensor (mm → inches + sensor→center offset
 
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
-    chassis.setPose(getBack(), 72-getLeft(), chassis.getPose().theta);
 
-    //double fieldX = mmToInches(leftSensor.get()) + 4.5;
+    pros::Task controllerPoseTask([&]() {
+        while (pros::competition::is_autonomous()) {
+            lemlib::Pose pose = chassis.getPose();
+            controller.print(0, 0, "(%.0f,%.0f,%.0f)   ",
+                             pose.x, pose.y, pose.theta);
+            pros::delay(100);
+        }
+    });
 
-    // grab whatever heading the IMU/odom thinks we have (should be ~270)
-    //double theta = chassis.getPose().theta;
-
-    // set pose with the measured X/Y, keep heading consistent with IMU
-    //chassis.setPose(fieldX, 16, theta);
-
-    //chassis.moveToPose(chassis.getPose().x,16,chassis.getPose().theta,1000,{.minSpeed = 127});
-    chassis.moveToPose(52, 22, 90,1300, {.minSpeed = 127, .earlyExitRange = 6});
-    spinIntake();
-    chassis.waitUntil(20);
-    Grabber.extend();
-    chassis.moveToPoint(52, 24,250, {.maxSpeed = 100});    
-    //pros::delay(100);
-    chassis.turnToHeading(315, 500);
-    chassis.moveToPose(60, 12, 315,1100, {.forwards = false}); // change x to 58 next time.
-    chassis.waitUntil(4);
-    spinChoice("up");
-    //pros::delay(300);
-    //spinChoice("stop");
-    chassis.moveToPose(24, 46, 315,2500,{.minSpeed = 127});
-    stopIntake();
-    spinChoice("stop");
-    chassis.turnToHeading(270, 275);
-    //pros::delay(500);
-    //chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
-    //pros::delay(500);
-    spinIntake();
-   // chassis.moveToPoint(24, 46, 400,{.minSpeed = 127, .earlyExitRange = 2});
-    chassis.turnToHeading(270, 300, {.minSpeed = 127, .earlyExitRange = 1});
-    chassis.moveToPose(7, 46, 270, 700, {.minSpeed = 100}, false);
-    chassis.moveToPose(0, 46, 270, 600, {.maxSpeed = 20}, false);
-    //spinChoice("stop");
-    //pros::delay(650);
-    //pros::delay(1000);
-    //chassis.moveToPose(46, 49, 270,3500., {.forwards = false, .minSpeed = 127, .earlyExitRange = 2});
-    chassis.moveToPose(48, 46, 270, 900, {.forwards = false, .minSpeed=127, .earlyExitRange = 2});
-    chassis.waitUntil(36);
-    spinIntake();
-    spinChoice("up");
-    pros::delay(1000);
-    //chassis.setPose(getForward(),72-getRight(),chassis.getPose().theta);
-    pros::delay(1000);
-    stopIntake();
-    spinChoice("stop");
-    chassis.moveToPoint(32, chassis.getPose().y, 600, {.minSpeed = 100});
-    chassis.turnToHeading(180, 300, {.minSpeed = 127, .earlyExitRange = 1});
-    chassis.moveToPose(30, -48, 180, 4500,{.minSpeed = 110, .earlyExitRange = 3});
-
-    // Code fix 1:
-
-    //chassis.moveToPoint(48, -24, 4300, {.minSpeed = 110, .earlyExitRange = 3});
-    //chassis.turnToPoint(24, -48, 1000, {.minSpeed = 100, .earlyExitRange = 2});
-
-    //chassis.setPose(72-getForward(),getRight()-72,chassis.getPose().theta);
-    chassis.moveToPose(24, -48, 270, 600);
-    //pros::delay(800);
-    //chassis.setPose(chassis.getPose().x, getLeft() - 72, chassis.getPose().theta);
-    //pros::delay(800);
-    spinIntake();
-    chassis.moveToPose(-4, -54, 270, 600, {.minSpeed = 100}, false);
-    chassis.moveToPose(0, -54, 270, 650, {.maxSpeed = 23}, false);
-    //pros::delay(1000);
-    chassis.moveToPose(46, -54, 270, 1200, {.forwards = false, .minSpeed = 127});
-    chassis.waitUntil(36);
-    spinChoice("up");
-    //chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
-    //spinIntake();
-    // moveToPose()
-    /*
-    chassis.moveToPose(36,chassis.getPose().y,chassis.getPose().theta,1500, {.minSpeed = 60, .earlyExitRange = 6});
-    pros::delay(500);
-    chassis.moveToPose(50,chassis.getPose().y,chassis.getPose().theta,2500, {.maxSpeed = 20});
-    pros::delay(500);
-    
-    // chassis.setPose(getBack(),72-getLeft(),chassis.getPose().theta);
-    pros::delay(500);
-    chassis.turnToHeading(-45,1500);
-    pros::delay(500);
-    chassis.moveToPose(24,50,chassis.getPose().theta,2500, {.maxSpeed = 100}); 
-    chassis.turnToHeading(-92,1500);
-    pros::delay(500);
-    chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
-    chassis.moveToPose(30.5,chassis.getPose().y,chassis.getPose().theta,1500,{.forwards = false, .maxSpeed = 30});
-    //chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
-    // spinIntake(); //spins intake for 2 seconds to make sure ball is in
-    pros::delay(500);                     
-    chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);                                      
-    spinChoice("up",4000); //spins choice motor up for 2 seconds to score in tall goal
-    Grabber.set_value(false); // extend descorer
-    pros::delay(500);
-    chassis.moveToPose(10,48,chassis.getPose().theta,2500);
-    pros::delay(1500);
-    chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
-    chassis.moveToPose(31,chassis.getPose().y,chassis.getPose().theta,1500,{.forwards = false, .maxSpeed = 50});      
-    */
-    /*
-    chassis.moveToPose(24,48,chassis.getPose().theta,2500); 
-    orrrrrr 
-    { Goes by the line
-    chassis.turnToHeading(270,1500);
-    chassis.moveToPose(24,24,chassis.getPose().theta,2500);
-    chassis.setPose(getFront(),72-getRight(),chassis.getPose().theta);
-    chassis.turnToHeading(0,1500);
-    chassis.moveToPose(24,48,chassis.getPose().theta,2500);
-    }
-    chassis.turnToHeading(270,1500);
-    chassis.setPose(getFront()+(lenght of tall goal thing),72-getRight(),chassis.getPose().theta);
-    grabber.extend();
-    chassis.moveToPose(14,chassis.getPose().y,chassis.getPose().theta,2500,{.maxSpeed = 50});
-    spinIntakeMS(2000); //spins intake for 2 seconds to make sure ball is in
-    spinIntake(); // keeps intake spinning to hold ball in
-    chassis.moveToPose(24,48,chassis.getPose().theta,2500,{.forwards = false}); 
-    grabber.retract();
-    chassis.setPose(getFront()+(lenght of tall goal thing),72-getRight(),chassis.getPose().theta);
-    chassis.moveToPose(37,48,chassis.getPose().theta,1500);
-    chassis.setPose(getFront()+(lenght of tall goal thing),72-getRight(),chassis.getPose().theta);
-    spinChoice("up",2000); //spins choice motor up for 2 seconds to score in tall goal
-    pros::delay(5000);
-    stopIntake(); // stops intake
-
-    */
-
-    //chassis.turnToHeading(-45,2500);
-    //chassis.moveToPose(24,56,chassis.getPose().theta,2500);
-    //chassis.setPose(chassis.getPose().x,72-getRight(),chassis.getPose().theta);
-    /*
-    pros::delay(1000); // wait for 1 second before starting autonomous
-    spinIntake();
-    chassis.moveToPose(0,27,0,9000, {.maxSpeed = 113}); // Move forward to intake rings
-    chassis.turnToHeading(72.5,5000);
-    pros::delay(10000);
-    chassis.moveToPose(15,29,72.5,14000, {.maxSpeed = 113}); // Move forward to intake rings
-    spinChoice("down", 2000); // Score lower goal
-    */
+    //chassis.setPose(getBack(), 72-getLeft(), 90);
+    chassis.setPose(0, 0, 0);
+    chassis.turnToHeading(90, 3000);
     }
 
 
