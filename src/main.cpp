@@ -326,10 +326,17 @@ void autonomous() {
         }
     });
 
-    //chassis.setPose(getBack(), 72-getLeft(), 90);
-    chassis.setPose(0, 0, 0);
-    chassis.turnToHeading(90, 3000);
-    }
+    chassis.setPose(getLeft()-72, getBack(), 0);
+    chassis.moveToPoint(-24, 48, 2000);
+    spinIntake();
+    chassis.waitUntil(28);
+    Grabber.extend();
+    chassis.turnToHeading(225, 2000);
+    chassis.moveToPoint(-10, 62, 2000, {.forwards = false});
+    Middle.retract();
+    chassis.waitUntilDone();
+    spinChoice("down");
+}
 
 
 // === Driver control ===
