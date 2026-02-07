@@ -331,7 +331,7 @@ void autonomous() {
     spinIntake();
     chassis.waitUntil(28);
     //Grabber.extend();
-    chassis.turnToHeading(225, 1000);
+    chassis.turnToHeading(225, 1200);
     chassis.moveToPoint(-10, 62, 1500, {.forwards = false});
     Middle.retract();
     //Grabber.retract();
@@ -339,23 +339,28 @@ void autonomous() {
     pros::delay(2000);
     spinChoice("stop");
     stopIntake();
-    chassis.moveToPoint(-48, 24, 2000);
+    Middle.extend();
+    chassis.moveToPoint(-46, 24, 2000);
     chassis.turnToHeading(180, 500, {}, false);
     //Grabber.extend();
     chassis.moveToPoint(-48, 14, 2500, {.minSpeed = 40});
     spinIntake();
     chassis.moveToPoint(-48, 14, 1000, {.maxSpeed = 23});
-    chassis.moveToPose(-50, 48, 180, 2000, {.forwards = false});
+    chassis.moveToPose(-48, 48, 180, 2000, {.forwards = false, .minSpeed = 127});
     chassis.waitUntil(35);
     spinChoice("up");
     pros::delay(2000);
     spinChoice("stop");
     stopIntake();
     chassis.moveToPoint(-48, 24, 1500);
-    chassis.turnToHeading(210, 500);
+    chassis.turnToHeading(127, 500);
     Descorer.extend();
-    chassis.moveToPoint(-60, 48, 1000, {.forwards = false});
+    chassis.moveToPoint(-58, 40, 1000, {.forwards = false, .minSpeed = 40, .earlyExitRange = 2});
     chassis.turnToHeading(180, 500);
+    chassis.moveToPoint(-58, 44, 1000, {.forwards = false});    
+    chassis.moveToPoint(-53, 61, 2000, {.forwards = false, .minSpeed = 127});
+    chassis.waitUntil(5);
+    Descorer.retract();
 
 }
 
